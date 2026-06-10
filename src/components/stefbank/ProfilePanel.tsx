@@ -73,17 +73,19 @@ export function ProfilePanel({ user, onLogout }: ProfilePanelProps) {
           <ChevronRight size={24} className="text-[#8A8A8A]" />
         </div>
 
-        <div className="mt-4 flex items-center justify-between gap-3 rounded-[16px] bg-[#FFF3F4] px-4 py-3">
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-[#FCE8EA] text-[#C9182B]">
-              <Landmark size={21} />
+        <div className="mt-4 space-y-3">
+          <div className="flex items-center justify-between gap-3 rounded-[16px] bg-[#FFF3F4] px-4 py-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-[#FCE8EA] text-[#C9182B]">
+                <Landmark size={21} />
+              </span>
+              <span className="text-[15px] font-medium text-[#2F2F2F]">{roleLabel(user.role)}</span>
+            </div>
+            <span className="h-10 shrink-0 rounded-full bg-[#FCE8EA] px-4 pt-[9px] text-[14px] font-semibold text-[#C9182B]">
+              已登录
             </span>
-            <span className="text-[15px] font-medium text-[#2F2F2F]">{roleLabel(user.role)}</span>
           </div>
-          <span className="h-10 shrink-0 rounded-full bg-[#FCE8EA] px-4 pt-[9px] text-[14px] font-semibold text-[#C9182B]">
-            已登录
-          </span>
-        </div>
+          </div>
       </Card>
 
       <Card className="px-5 py-4" data-animate-item>

@@ -8,7 +8,7 @@
   Target,
   WalletCards,
 } from "lucide-react";
-import type { AccountSummary, RequestTab, TabId, Transaction, UserRole } from "@/data/mock-bank";
+import type { AccountSummary, RequestTab, TabId, Transaction, TransactionType, UserRole } from "@/data/mock-bank";
 import { formatCurrency, signedAmount, transactionLabel } from "@/lib/format";
 import { ActionButton, Card, FeatureCard, IconBadge } from "./ui";
 
@@ -18,6 +18,7 @@ type HomePanelProps = {
   role: UserRole;
   onNavigate: (tab: TabId) => void;
   onStartMoneyAction: (tab: RequestTab) => void;
+  onStartTransactionAction: (type: TransactionType | "new") => void;
 };
 
 export function HomePanel({
@@ -26,6 +27,7 @@ export function HomePanel({
   role,
   onNavigate,
   onStartMoneyAction,
+  onStartTransactionAction,
 }: HomePanelProps) {
   const recentTransactions = transactions.slice(0, 3);
   const isManager = role === "manager";
@@ -48,7 +50,7 @@ export function HomePanel({
           <ActionButton icon={ClipboardCheck} onClick={() => onNavigate("requests")}>
             处理申请
           </ActionButton>
-          <ActionButton variant="secondary" icon={PencilLine} onClick={() => onNavigate("transactions")}>
+          <ActionButton variant="secondary" icon={PencilLine} onClick={() => onStartTransactionAction("new")}>
             新增流水
           </ActionButton>
           <ActionButton variant="secondary" icon={ArrowRight} onClick={() => onNavigate("transactions")}>

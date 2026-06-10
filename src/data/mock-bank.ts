@@ -8,7 +8,6 @@ export type TransactionFilter = "all" | TransactionType;
 export type UserProfile = {
   id: string;
   username: string;
-  password: string;
   name: string;
   displayName: string;
   role: UserRole;
@@ -52,10 +51,7 @@ export type BankRequest = {
   urgency?: string;
   paymentMethod: string;
   note: string;
+  reviewNote?: string;
   status: RequestStatus;
   createdAt: string;
 };
-
-export { findMockUserByCredentials, mockUsers } from "./mockUsers";
-export { mockAccount, mockTransactions } from "./mockTransactions";
-export { mockRequests } from "./mockRequests";

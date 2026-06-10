@@ -4,30 +4,35 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import Image from "next/image";
 import { LockKeyhole, UserRound } from "lucide-react";
-import { findMockUserByCredentials } from "@/data/mockUsers";
-import type { UserRole } from "@/data/mock-bank";
 import { ActionButton } from "./ui";
 
 type LoginPanelProps = {
-  onLogin: (role: UserRole) => void;
+  onLogin: (credentials: { username: string; password: string }) => Promise<void>;
 };
 
 export function LoginPanel({ onLogin }: LoginPanelProps) {
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function submitLogin(event: FormEvent<HTMLFormElement>) {
+  async function submitLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const user = findMockUserByCredentials(account, password);
-
-    if (user) {
-      onLogin(user.role);
+    if (isSubmitting) {
       return;
     }
 
-    setError("账号或密码不正确，请重新输入");
+    setIsSubmitting(true);
+    setError("");
+
+    try {
+      await onLogin({ username: account, password });
+    } catch (nextError) {
+      setError(nextError instanceof Error ? nextError.message : "账号或密码不正确，请重新输入");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -37,7 +42,7 @@ export function LoginPanel({ onLogin }: LoginPanelProps) {
           <h1 className="relative mx-auto flex w-[260px] justify-center min-[390px]:w-[286px]">
             <span className="pointer-events-none absolute -left-12 bottom-[5px] z-10 min-[390px]:-left-14">
               <Image
-                src="/person-white-outline.png"
+                src="/person-white-outline.webp"
                 alt=""
                 width={144}
                 height={281}
@@ -47,7 +52,7 @@ export function LoginPanel({ onLogin }: LoginPanelProps) {
               />
             </span>
             <Image
-              src="/cherry-bank-logo-small.png"
+              src="/cherry-bank-logo-small.webp"
               alt="车厘子银行，椰子水最信任的银行"
               width={240}
               height={117}
@@ -107,8 +112,8 @@ export function LoginPanel({ onLogin }: LoginPanelProps) {
             </p>
           ) : null}
 
-          <ActionButton type="submit" className="mt-4 w-full">
-            登录
+          <ActionButton type="submit" className="mt-4 w-full" disabled={isSubmitting}>
+            {isSubmitting ? "登录中..." : "登录"}
           </ActionButton>
         </form>
       </main>

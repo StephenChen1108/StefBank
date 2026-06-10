@@ -3,13 +3,15 @@
 import { useMemo, useState } from "react";
 import {
   ArrowDownToLine,
-  ArrowRight,
   ArrowUpFromLine,
   CalendarDays,
   ChevronDown,
+  Eye,
+  PencilLine,
+  Plus,
   ReceiptText,
 } from "lucide-react";
-import type { Transaction, TransactionFilter } from "@/data/mock-bank";
+import type { Transaction, TransactionFilter, TransactionType, UserRole } from "@/data/mock-bank";
 import { formatCurrency, signedAmount, transactionLabel } from "@/lib/format";
 import { Card, IconBadge, SegmentedControl } from "./ui";
 
@@ -17,6 +19,10 @@ type SortMode = "latest" | "oldest";
 
 type TransactionsPanelProps = {
   transactions: Transaction[];
+  role: UserRole;
+  onStartTransactionAction: (type: TransactionType | "new") => void;
+  onEditTransaction?: (transaction: Transaction) => void;
+  onViewTransaction?: (transaction: Transaction) => void;
 };
 
 const filterItems: { value: TransactionFilter; label: string }[] = [
@@ -29,7 +35,13 @@ function dateNumber(date: string) {
   return Number(date.replace(/\./g, ""));
 }
 
-export function TransactionsPanel({ transactions }: TransactionsPanelProps) {
+export function TransactionsPanel({
+  transactions,
+  role,
+  onStartTransactionAction,
+  onEditTransaction,
+  onViewTransaction,
+}: TransactionsPanelProps) {
   const [filter, setFilter] = useState<TransactionFilter>("all");
   const [year, setYear] = useState("2026");
   const [sortMode, setSortMode] = useState<SortMode>("latest");
@@ -89,7 +101,19 @@ export function TransactionsPanel({ transactions }: TransactionsPanelProps) {
 
       <Card className="flex min-h-0 flex-1 flex-col px-5 py-4" data-animate-item>
         <div className="mb-4 flex shrink-0 items-center justify-between">
-          <h2 className="text-[18px] font-semibold text-[#2F2F2F]">交易明细</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-[18px] font-semibold text-[#2F2F2F]">交易明细</h2>
+            {role === "manager" ? (
+              <button
+                type="button"
+                onClick={() => onStartTransactionAction("new")}
+                className="flex h-7 w-7 items-center justify-center rounded-full bg-[#C9182B] text-white transition active:scale-95"
+                aria-label="新增流水"
+              >
+                <Plus size={14} strokeWidth={2.5} />
+              </button>
+            ) : null}
+          </div>
           <span className="text-[13px] text-[#8A8A8A]">
             共 {visibleTransactions.length} 条
           </span>
@@ -103,6 +127,13 @@ export function TransactionsPanel({ transactions }: TransactionsPanelProps) {
                 <button
                   key={transaction.id}
                   type="button"
+                  onClick={() => {
+                    if (role === "manager" && onEditTransaction) {
+                      onEditTransaction(transaction);
+                    } else if (role !== "manager" && onViewTransaction) {
+                      onViewTransaction(transaction);
+                    }
+                  }}
                   className="grid w-full grid-cols-[44px_1fr_auto_18px] items-center gap-3 py-3.5 text-left transition active:scale-[0.99]"
                 >
                   <IconBadge
@@ -125,7 +156,11 @@ export function TransactionsPanel({ transactions }: TransactionsPanelProps) {
                       余额 {formatCurrency(transaction.balanceAfter)}
                     </p>
                   </div>
-                  <ArrowRight size={18} className="text-[#A8A8A8]" />
+                  {role === "manager" ? (
+                    <PencilLine size={16} className="text-[#A8A8A8]" />
+                  ) : (
+                    <Eye size={16} className="text-[#A8A8A8]" />
+                  )}
                 </button>
               );
             })}
