@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ArrowDownToLine, ArrowRight, ArrowUpFromLine, CheckCircle2, Clock3, MessageSquareText, Send, Trash2, X, XCircle } from "lucide-react";
 import type { AccountSummary, BankRequest, RequestTab, UserRole } from "@/data/mock-bank";
 import { formatCurrency, requestLabel, statusLabel, statusTone } from "@/lib/format";
@@ -100,12 +100,14 @@ export function RequestsPanel({
     await runRequestAction(requestId, () => onDeleteRequest(requestId));
   }
 
+  const pendingRequests = useMemo(() => requests.filter((request) => request.status === "pending"), [requests]);
+  const approvedRequests = useMemo(() => requests.filter((request) => request.status === "approved"), [requests]);
+  const handledRequests = useMemo(
+    () => requests.filter((request) => request.status === "completed" || request.status === "rejected"),
+    [requests],
+  );
+
   if (role === "manager") {
-    const pendingRequests = requests.filter((request) => request.status === "pending");
-    const approvedRequests = requests.filter((request) => request.status === "approved");
-    const handledRequests = requests.filter(
-      (request) => request.status === "completed" || request.status === "rejected",
-    );
 
     return (
       <div className="space-y-4">

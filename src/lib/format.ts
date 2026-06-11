@@ -6,12 +6,14 @@ import type {
   UserRole,
 } from "@/data/mock-bank";
 
+const currencyFormatter = new Intl.NumberFormat("zh-CN", {
+  style: "currency",
+  currency: "CNY",
+  maximumFractionDigits: 0,
+});
+
 export function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("zh-CN", {
-    style: "currency",
-    currency: "CNY",
-    maximumFractionDigits: 0,
-  }).format(amount);
+  return currencyFormatter.format(amount);
 }
 
 export function signedAmount(transaction: Pick<Transaction, "type" | "amount">) {
@@ -52,12 +54,3 @@ export function statusTone(status: RequestStatus) {
   return tones[status];
 }
 
-export function todayText() {
-  return new Intl.DateTimeFormat("zh-CN", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  })
-    .format(new Date())
-    .replace(/\//g, ".");
-}

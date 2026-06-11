@@ -238,28 +238,30 @@ export async function loadStefBankSnapshot(): Promise<BankSnapshot> {
       .eq("id", selectedAccountId)
       .single(),
   ) as AccountRow;
-  const goal = requireNoError(
-    await supabase
+
+  // goals / transactions / requests 只依赖 account.id，可并行查询
+  const [goalResult, transactionResult, requestResult] = await Promise.all([
+    supabase
       .from("goals")
       .select("title, target_amount, current_amount")
       .eq("account_id", account.id)
       .single(),
-  ) as GoalRow;
-  const transactionRows = requireNoError(
-    await supabase
+    supabase
       .from("transactions")
       .select("id, type, amount, balance_after, category, description, transaction_date, status, created_at")
       .eq("account_id", account.id)
       .order("transaction_date", { ascending: false })
       .order("created_at", { ascending: false }),
-  ) as TransactionRow[];
-  const requestRows = requireNoError(
-    await supabase
+    supabase
       .from("requests")
       .select("id, request_type, amount, category, urgency, payment_method, note, review_note, status, created_at")
       .eq("account_id", account.id)
       .order("created_at", { ascending: false }),
-  ) as RequestRow[];
+  ]);
+
+  const goal = requireNoError(goalResult) as unknown as GoalRow;
+  const transactionRows = requireNoError(transactionResult) as unknown as TransactionRow[];
+  const requestRows = requireNoError(requestResult) as unknown as RequestRow[];
 
   const transactions = transactionRows.map(mapTransaction);
 

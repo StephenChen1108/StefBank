@@ -5,6 +5,7 @@ import { gsap } from "gsap";
 import { ArrowLeft, Check, Send } from "lucide-react";
 import Image from "next/image";
 import type { AccountSummary, RequestTab } from "@/data/mock-bank";
+import { EXPENSE_CATEGORIES, type ExpenseCategory } from "@/data/categories";
 import type { RequestInput } from "@/lib/stefbank-supabase";
 import { formatCurrency } from "@/lib/format";
 
@@ -15,7 +16,6 @@ type MoneyActionScreenProps = {
   onClose: () => void;
 };
 
-const categories = ["购物", "吃饭", "学习", "交通", "应急", "其他"] as const;
 const urgencyLevels = ["普通", "今天要", "救命啊"] as const;
 const paymentMethods = ["微信", "支付宝", "银行卡"] as const;
 
@@ -28,7 +28,7 @@ export function MoneyActionScreen({
   const screenRef = useRef<HTMLDivElement>(null);
   const isWithdraw = mode === "withdraw";
   const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState<(typeof categories)[number]>("购物");
+  const [category, setCategory] = useState<ExpenseCategory>("购物");
   const [urgency, setUrgency] = useState<(typeof urgencyLevels)[number]>("普通");
   const [paymentMethod, setPaymentMethod] = useState<(typeof paymentMethods)[number]>("微信");
   const [note, setNote] = useState("");
@@ -148,7 +148,7 @@ export function MoneyActionScreen({
 
           {isWithdraw ? (
             <div className="mt-2.5 shrink-0 space-y-2">
-              <CompactChoiceGroup label="用途" items={categories} value={category} onChange={setCategory} />
+              <CompactChoiceGroup label="用途" items={EXPENSE_CATEGORIES} value={category} onChange={setCategory} />
               <CompactChoiceGroup label="紧急" items={urgencyLevels} value={urgency} onChange={setUrgency} />
             </div>
           ) : null}
