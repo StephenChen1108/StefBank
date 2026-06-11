@@ -150,7 +150,13 @@ export function GoalEditorScreen({
         <header data-goal-screen-item className="flex h-12 shrink-0 items-center justify-between">
           <button
             type="button"
-            onClick={step === "form" && isEditing ? () => setStep("type") : onClose}
+            onClick={() => {
+              if (isEditing && step === "type") {
+                setStep("form");
+              } else {
+                onClose();
+              }
+            }}
             aria-label="返回"
             className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#C9182B] shadow-[0_6px_16px_rgba(160,80,80,0.08)] transition active:scale-95"
           >
@@ -172,6 +178,7 @@ export function GoalEditorScreen({
           {step === "type" ? (
             <TypePickerView
               onSelect={selectType}
+              onBack={() => (isEditing ? setStep("form") : onClose())}
               onClose={onClose}
             />
           ) : (
@@ -209,19 +216,31 @@ export function GoalEditorScreen({
 
 function TypePickerView({
   onSelect,
+  onBack,
   onClose,
 }: {
   onSelect: (typeId: GoalTypeId) => void;
+  onBack: () => void;
   onClose: () => void;
 }) {
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div data-goal-screen-item className="shrink-0 text-center">
+      <div data-goal-screen-item className="flex shrink-0 items-center">
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="返回"
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-[#FFF0F0] text-[#C9182B] transition active:scale-95"
+        >
+          <ArrowLeft size={18} />
+        </button>
+      </div>
+      <div data-goal-screen-item className="mt-2 text-center">
         <h1 className="text-[18px] font-bold text-[#2F2F2F]">选择储蓄目标</h1>
         <p className="mt-1.5 text-[14px] text-[#8A8A8A]">选一个你最想存钱的方向</p>
       </div>
 
-      <div data-goal-screen-item className="mt-4 min-h-0 flex-1 overflow-y-auto">
+      <div data-goal-screen-item className="no-scrollbar mt-4 min-h-0 flex-1 overflow-y-auto">
         <div className="grid grid-cols-2 gap-3">
           {GOAL_TYPES.map((type) => {
             const Icon = type.icon;
@@ -310,7 +329,7 @@ function GoalFormView({
   onClose: () => void;
 }) {
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+    <div className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto">
       {/* Type selector bar */}
       <button
         type="button"
@@ -404,6 +423,7 @@ function GoalFormView({
               </label>
               <input
                 id={`goal-meta-${field.key}`}
+                type={field.type === "date" ? "date" : "text"}
                 value={metadata[field.key] ?? ""}
                 onChange={(e) => {
                   onUpdateMetadata(field.key, e.target.value.slice(0, field.maxLength ?? 60));

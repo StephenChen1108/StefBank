@@ -19,6 +19,7 @@ export type GoalTypeField = {
   label: string;
   placeholder: string;
   maxLength?: number;
+  type?: "text" | "date";
 };
 
 export type GoalTypeDefinition = {
@@ -40,7 +41,7 @@ export const GOAL_TYPES: GoalTypeDefinition[] = [
     tint: { bg: "#E8F4FD", text: "#1976D2" },
     fields: [
       { key: "destination", label: "目的地", placeholder: "例如：东京、巴黎、三亚...", maxLength: 30 },
-      { key: "departureDate", label: "出发日期", placeholder: "选择日期" },
+      { key: "departureDate", label: "出发日期", placeholder: "选择日期", type: "date" },
     ],
     defaultTitle: "旅行基金",
   },
