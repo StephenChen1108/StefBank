@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { AccountSummary, BankRequest, RequestTab, TabId, Transaction, TransactionType, UserProfile } from "@/data/mock-bank";
 import {
   approveWithdrawal,

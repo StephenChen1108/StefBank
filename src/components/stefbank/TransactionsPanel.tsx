@@ -43,7 +43,7 @@ export function TransactionsPanel({
   onViewTransaction,
 }: TransactionsPanelProps) {
   const [filter, setFilter] = useState<TransactionFilter>("all");
-  const [year, setYear] = useState("2026");
+  const [year, setYear] = useState(() => String(new Date().getFullYear()));
   const [sortMode, setSortMode] = useState<SortMode>("latest");
 
   const years = useMemo(

@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
+import type { LucideIcon } from "lucide-react";
 import { ArrowDownToLine, ArrowLeft, ArrowUpFromLine, CalendarDays, Check, Pencil, Plus, Tag, Trash2, X } from "lucide-react";
 import Image from "next/image";
 import type { AccountSummary, Transaction, TransactionType } from "@/data/mock-bank";
+import { ALL_CATEGORIES, type AllCategory } from "@/data/categories";
 import { formatCurrency } from "@/lib/format";
 import { SegmentedControl } from "./ui";
 
@@ -22,8 +24,6 @@ const typeItems: { value: TransactionType; label: string }[] = [
   { value: "deposit", label: "存钱" },
   { value: "withdraw", label: "取钱" },
 ];
-
-const categories = ["存款", "购物", "吃饭", "学习", "交通", "应急", "其他"] as const;
 
 function dateForInput(dateText: string) {
   return dateText.replace(/\./g, "-");
@@ -44,8 +44,8 @@ export function TransactionActionScreen({
     existingTransaction?.type ?? initialType ?? "deposit",
   );
   const [amount, setAmount] = useState(existingTransaction ? String(existingTransaction.amount) : "");
-  const [category, setCategory] = useState<(typeof categories)[number]>(
-    existingTransaction?.category as (typeof categories)[number] ?? (initialType === "withdraw" ? "其他" : "存款"),
+  const [category, setCategory] = useState<AllCategory>(
+    existingTransaction?.category as AllCategory ?? (initialType === "withdraw" ? "其他" : "存款"),
   );
   const [description, setDescription] = useState(existingTransaction?.description ?? "");
   const [transactionDate, setTransactionDate] = useState(
@@ -314,7 +314,7 @@ export function TransactionActionScreen({
               <div className="mt-2.5 shrink-0">
                 <p className="mb-1.5 text-[13px] font-medium text-[#4B3D3B]">分类</p>
                 <div className="grid grid-cols-3 gap-2">
-                  {categories.map((item) => {
+                  {ALL_CATEGORIES.map((item) => {
                     const selected = category === item;
                     return (
                       <button
@@ -426,22 +426,16 @@ function InfoRow({
   icon: Icon,
   label,
   children,
-  truncate = false,
 }: {
   icon: typeof CalendarDays;
   label: string;
   children: React.ReactNode;
-  truncate?: boolean;
 }) {
   return (
     <div className="flex items-center gap-3">
       <Icon size={18} className="shrink-0 text-[#8A8A8A]" />
       <span className="shrink-0 text-[14px] text-[#8A8A8A]">{label}</span>
-      <span
-        className={`ml-auto min-w-0 text-[15px] font-medium text-[#2F2F2F] ${
-          truncate ? "truncate" : ""
-        }`}
-      >
+      <span className="ml-auto min-w-0 text-[15px] font-medium text-[#2F2F2F]">
         {children}
       </span>
     </div>
