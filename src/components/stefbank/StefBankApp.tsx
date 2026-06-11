@@ -7,6 +7,7 @@ import {
   completeRequest,
   confirmDepositRequest,
   createAdminTransaction,
+  deleteGoal,
   deleteRequest,
   deleteTransaction,
   getExistingStefBankSession,
@@ -16,12 +17,14 @@ import {
   signOutStefBank,
   submitBankRequest,
   updateTransaction,
+  upsertGoal,
 } from "@/lib/stefbank-supabase";
-import type { RequestInput, TransactionInput } from "@/lib/stefbank-supabase";
+import type { GoalInput, RequestInput, TransactionInput } from "@/lib/stefbank-supabase";
 import { AppHeader } from "./AppHeader";
 import { BottomNav } from "./BottomNav";
 import { HomePanel } from "./HomePanel";
 import { LoginPanel } from "./LoginPanel";
+import { GoalEditorScreen } from "./GoalEditorScreen";
 import { MoneyActionScreen } from "./MoneyActionScreen";
 import { PageMotion } from "./PageMotion";
 import { ProfilePanel } from "./ProfilePanel";
@@ -35,6 +38,7 @@ export function StefBankApp() {
   const [transactionAction, setTransactionAction] = useState<TransactionType | "new" | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [viewingTransaction, setViewingTransaction] = useState<Transaction | null>(null);
+  const [isGoalEditorOpen, setIsGoalEditorOpen] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [accountId, setAccountId] = useState("");
   const [account, setAccount] = useState<AccountSummary | null>(null);
@@ -91,6 +95,7 @@ export function StefBankApp() {
     setActiveTab("home");
     setMoneyAction(null);
     setTransactionAction(null);
+    setIsGoalEditorOpen(false);
   }
 
   async function handleRequestSubmit(input: RequestInput) {
@@ -187,6 +192,24 @@ export function StefBankApp() {
     );
   }
 
+  if (isGoalEditorOpen) {
+    return (
+      <GoalEditorScreen
+        account={account}
+        existingGoal={account.goal}
+        onSave={async (input: GoalInput) => {
+          await upsertGoal(accountId, input);
+          await refreshSnapshot();
+        }}
+        onDelete={async () => {
+          await deleteGoal(accountId);
+          await refreshSnapshot();
+        }}
+        onClose={() => setIsGoalEditorOpen(false)}
+      />
+    );
+  }
+
   return (
     <div className="h-dvh overflow-hidden bg-[#FFF8F1]">
       <div className="mx-auto flex h-dvh max-w-[430px] flex-col overflow-hidden px-5 pb-[calc(env(safe-area-inset-bottom)+94px)] pt-[calc(env(safe-area-inset-top)+24px)]">
@@ -220,6 +243,7 @@ export function StefBankApp() {
               onNavigate={navigate}
               onStartMoneyAction={setMoneyAction}
               onStartTransactionAction={setTransactionAction}
+              onOpenGoalEditor={() => setIsGoalEditorOpen(true)}
             />
           </section>
 
@@ -268,6 +292,7 @@ export function StefBankApp() {
             <ProfilePanel
               user={user}
               onLogout={logout}
+              onOpenGoalEditor={() => setIsGoalEditorOpen(true)}
             />
           </section>
         </main>

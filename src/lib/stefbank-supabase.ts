@@ -26,9 +26,12 @@ type AccountRow = {
 };
 
 type GoalRow = {
+  id: string;
   title: string;
   target_amount: number;
   current_amount: number;
+  goal_type: string;
+  metadata: Record<string, string>;
 };
 
 type TransactionRow = {
@@ -156,10 +159,13 @@ function mapAccount(row: AccountRow, goal: GoalRow, transactions: Transaction[])
     totalRecords: transactions.length,
     lastUpdated: transactions[0]?.transactionDate ?? formatDateText(row.updated_at),
     goal: {
+      id: goal.id,
       title: goal.title,
       currentAmount: goal.current_amount,
       targetAmount: goal.target_amount,
       progress,
+      goalType: goal.goal_type,
+      metadata: goal.metadata,
     },
   };
 }
@@ -243,7 +249,7 @@ export async function loadStefBankSnapshot(): Promise<BankSnapshot> {
   const [goalResult, transactionResult, requestResult] = await Promise.all([
     supabase
       .from("goals")
-      .select("title, target_amount, current_amount")
+      .select("id, title, target_amount, current_amount, goal_type, metadata")
       .eq("account_id", account.id)
       .single(),
     supabase
@@ -332,4 +338,25 @@ export async function deleteTransaction(transactionId: string) {
 
 export async function deleteRequest(requestId: string) {
   await callRpc("delete_request", { p_request_id: requestId });
+}
+
+export type GoalInput = {
+  title: string;
+  targetAmount: number;
+  goalType: string;
+  metadata: Record<string, string>;
+};
+
+export async function upsertGoal(accountId: string, input: GoalInput) {
+  await callRpc("upsert_goal", {
+    p_account_id: accountId,
+    p_title: input.title,
+    p_target_amount: input.targetAmount,
+    p_goal_type: input.goalType,
+    p_metadata: input.metadata,
+  });
+}
+
+export async function deleteGoal(accountId: string) {
+  await callRpc("delete_goal", { p_account_id: accountId });
 }

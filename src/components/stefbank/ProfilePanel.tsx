@@ -20,6 +20,7 @@ import { Card } from "./ui";
 type ProfilePanelProps = {
   user: UserProfile;
   onLogout: () => void;
+  onOpenGoalEditor: () => void;
 };
 
 const settingGroups = [
@@ -29,7 +30,6 @@ const settingGroups = [
     { label: "通知设置", icon: Bell },
   ],
   [
-    { label: "存款目标管理", icon: Target },
     { label: "预算管理", icon: ChartPie },
     { label: "标签管理", icon: Tag },
   ],
@@ -40,7 +40,7 @@ const settingGroups = [
   ],
 ];
 
-export function ProfilePanel({ user, onLogout }: ProfilePanelProps) {
+export function ProfilePanel({ user, onLogout, onOpenGoalEditor }: ProfilePanelProps) {
   return (
     <div className="space-y-4">
       <Card className="px-5 py-5" data-animate-item>
@@ -89,6 +89,21 @@ export function ProfilePanel({ user, onLogout }: ProfilePanelProps) {
       </Card>
 
       <Card className="px-5 py-4" data-animate-item>
+        {user.role === "depositor" ? (
+          <>
+            <button
+              type="button"
+              onClick={onOpenGoalEditor}
+              className="flex h-[56px] w-full items-center gap-3 text-left transition active:scale-[0.99]"
+            >
+              <Target size={23} strokeWidth={1.9} className="shrink-0 text-[#2F2F2F]" />
+              <span className="min-w-0 flex-1 text-[15px] font-medium text-[#2F2F2F]">存款目标管理</span>
+              <ChevronRight size={20} className="text-[#8A8A8A]" />
+            </button>
+            <div className="h-px bg-[#EFE7E5]" />
+          </>
+        ) : null}
+
         {settingGroups.map((group, groupIndex) => (
           <div key={groupIndex}>
             {group.map((item) => {

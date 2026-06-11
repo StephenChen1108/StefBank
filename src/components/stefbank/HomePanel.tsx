@@ -4,12 +4,12 @@
   ArrowUpFromLine,
   ClipboardCheck,
   PencilLine,
-  Plane,
   Target,
   WalletCards,
 } from "lucide-react";
 import type { AccountSummary, RequestTab, TabId, Transaction, TransactionType, UserRole } from "@/data/mock-bank";
 import { formatCurrency, signedAmount, transactionLabel } from "@/lib/format";
+import { goalTypeIcon } from "@/data/goal-types";
 import { ActionButton, Card, FeatureCard, IconBadge } from "./ui";
 
 type HomePanelProps = {
@@ -19,6 +19,7 @@ type HomePanelProps = {
   onNavigate: (tab: TabId) => void;
   onStartMoneyAction: (tab: RequestTab) => void;
   onStartTransactionAction: (type: TransactionType | "new") => void;
+  onOpenGoalEditor: () => void;
 };
 
 export function HomePanel({
@@ -28,6 +29,7 @@ export function HomePanel({
   onNavigate,
   onStartMoneyAction,
   onStartTransactionAction,
+  onOpenGoalEditor,
 }: HomePanelProps) {
   const recentTransactions = transactions.slice(0, 3);
   const isManager = role === "manager";
@@ -55,9 +57,6 @@ export function HomePanel({
           </ActionButton>
           <ActionButton variant="secondary" icon={ArrowRight} onClick={() => onNavigate("transactions")}>
             查看流水
-          </ActionButton>
-          <ActionButton variant="secondary" icon={Target}>
-            设置目标
           </ActionButton>
         </div>
       ) : (
@@ -99,41 +98,48 @@ export function HomePanel({
         </Card>
       </div>
 
-      <Card className="px-5 py-3.5" data-animate-item>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-[18px] font-semibold text-[#2F2F2F]">储蓄目标</h2>
+      {!isManager ? (
+        <Card className="px-5 py-3.5" data-animate-item>
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-[18px] font-semibold text-[#2F2F2F]">储蓄目标</h2>
+            <button
+              type="button"
+              onClick={onOpenGoalEditor}
+              aria-label="编辑储蓄目标"
+              className="text-[#8A8A8A] transition active:scale-95"
+            >
+              <ArrowRight size={22} />
+            </button>
+          </div>
           <button
             type="button"
-            aria-label="查看储蓄目标"
-            className="text-[#8A8A8A] transition active:scale-95"
+            onClick={onOpenGoalEditor}
+            className="flex w-full items-center gap-3 text-left transition active:scale-[0.99]"
           >
-            <ArrowRight size={22} />
-          </button>
-        </div>
-        <div className="flex items-center gap-3">
-          <IconBadge icon={Plane} tone="red" size="lg" />
-          <div className="min-w-0 flex-1">
-            <div className="flex items-end justify-between gap-3">
-              <div>
-                <p className="text-[17px] font-semibold text-[#2F2F2F]">{account.goal.title}</p>
-                <p className="mt-2 text-[15px] text-[#8A8A8A]">
-                  <span className="font-semibold text-[#C9182B]">
-                    {formatCurrency(account.goal.currentAmount)}
-                  </span>{" "}
-                  / {formatCurrency(account.goal.targetAmount)}
-                </p>
+            <IconBadge icon={goalTypeIcon(account.goal.goalType)} tone="red" size="lg" />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <p className="text-[17px] font-semibold text-[#2F2F2F]">{account.goal.title}</p>
+                  <p className="mt-2 text-[15px] text-[#8A8A8A]">
+                    <span className="font-semibold text-[#C9182B]">
+                      {formatCurrency(account.goal.currentAmount)}
+                    </span>{" "}
+                    / {formatCurrency(account.goal.targetAmount)}
+                  </p>
+                </div>
+                <p className="text-[21px] font-semibold text-[#C9182B]">{account.goal.progress}%</p>
               </div>
-              <p className="text-[21px] font-semibold text-[#C9182B]">{account.goal.progress}%</p>
+              <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-[#F3ECEA]">
+                <div
+                  className="h-full rounded-full bg-[linear-gradient(135deg,#F46B7A_0%,#C9182B_100%)]"
+                  style={{ width: `${account.goal.progress}%` }}
+                />
+              </div>
             </div>
-            <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-[#F3ECEA]">
-              <div
-                className="h-full rounded-full bg-[linear-gradient(135deg,#F46B7A_0%,#C9182B_100%)]"
-                style={{ width: `${account.goal.progress}%` }}
-              />
-            </div>
-          </div>
-        </div>
-      </Card>
+          </button>
+        </Card>
+      ) : null}
 
       <Card className="px-5 py-3.5" data-animate-item>
         <div className="mb-4 flex items-center justify-between">

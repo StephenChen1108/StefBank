@@ -15,10 +15,13 @@ export type UserProfile = {
 };
 
 export type SavingGoal = {
+  id: string;
   title: string;
-  currentAmount: number;
   targetAmount: number;
+  currentAmount: number;
   progress: number;
+  goalType: string;
+  metadata: Record<string, string>;
 };
 
 export type AccountSummary = {
