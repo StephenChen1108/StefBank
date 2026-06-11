@@ -1,26 +1,17 @@
 import type { LucideIcon } from "lucide-react";
 import {
-  BookOpen,
   Car,
-  Heart,
   Home,
-  Landmark,
   Plane,
   ShoppingBag,
   Sparkles,
-  Stethoscope,
-  Target,
 } from "lucide-react";
 
 export type GoalTypeId =
   | "travel"
-  | "emergency"
   | "house"
   | "car"
-  | "education"
-  | "medical"
   | "shopping"
-  | "retirement"
   | "custom";
 
 export type GoalTypeField = {
@@ -54,15 +45,6 @@ export const GOAL_TYPES: GoalTypeDefinition[] = [
     defaultTitle: "旅行基金",
   },
   {
-    id: "emergency",
-    label: "应急",
-    description: "为意外情况做好准备",
-    icon: Heart,
-    tint: { bg: "#FCE8EA", text: "#C9182B" },
-    fields: [],
-    defaultTitle: "应急储备金",
-  },
-  {
     id: "house",
     label: "买房",
     description: "攒下属于自己的小窝",
@@ -86,28 +68,6 @@ export const GOAL_TYPES: GoalTypeDefinition[] = [
     defaultTitle: "买车基金",
   },
   {
-    id: "education",
-    label: "学习",
-    description: "投资自己的成长",
-    icon: BookOpen,
-    tint: { bg: "#F3E8FD", text: "#7B1FA2" },
-    fields: [
-      { key: "course", label: "课程/考试", placeholder: "例如：雅思、考研...", maxLength: 30 },
-    ],
-    defaultTitle: "学习基金",
-  },
-  {
-    id: "medical",
-    label: "医疗",
-    description: "健康保障储备",
-    icon: Stethoscope,
-    tint: { bg: "#E8F8F5", text: "#00796B" },
-    fields: [
-      { key: "purpose", label: "用途说明", placeholder: "例如：体检、手术...", maxLength: 30 },
-    ],
-    defaultTitle: "医疗储备金",
-  },
-  {
     id: "shopping",
     label: "购物",
     description: "为心仪的物品攒钱",
@@ -117,15 +77,6 @@ export const GOAL_TYPES: GoalTypeDefinition[] = [
       { key: "item", label: "想买什么", placeholder: "例如：MacBook Pro...", maxLength: 30 },
     ],
     defaultTitle: "购物基金",
-  },
-  {
-    id: "retirement",
-    label: "养老",
-    description: "为未来的自己存一份安心",
-    icon: Landmark,
-    tint: { bg: "#FFF8E1", text: "#F57F17" },
-    fields: [],
-    defaultTitle: "养老储备金",
   },
   {
     id: "custom",
