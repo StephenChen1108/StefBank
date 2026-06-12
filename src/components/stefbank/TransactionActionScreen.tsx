@@ -5,9 +5,10 @@ import { gsap } from "gsap";
 import type { LucideIcon } from "lucide-react";
 import { ArrowDownToLine, ArrowLeft, ArrowUpFromLine, CalendarDays, Check, Pencil, Plus, Tag, Trash2, X } from "lucide-react";
 import Image from "next/image";
-import type { AccountSummary, Transaction, TransactionType } from "@/data/mock-bank";
+import type { AccountSummary, Transaction, TransactionType } from "@/data/bank-types";
 import { ALL_CATEGORIES, type AllCategory } from "@/data/categories";
 import { formatCurrency } from "@/lib/format";
+import { isValidYuanInput } from "@/lib/money";
 import { SegmentedControl } from "./ui";
 
 type TransactionActionScreenProps = {
@@ -43,7 +44,7 @@ export function TransactionActionScreen({
   const [type, setType] = useState<TransactionType>(
     existingTransaction?.type ?? initialType ?? "deposit",
   );
-  const [amount, setAmount] = useState(existingTransaction ? String(existingTransaction.amount) : "");
+  const [amount, setAmount] = useState(existingTransaction ? String(centsToYuan(existingTransaction.amount)) : "");
   const [category, setCategory] = useState<AllCategory>(
     existingTransaction?.category as AllCategory ?? (initialType === "withdraw" ? "其他" : "存款"),
   );
@@ -88,14 +89,14 @@ export function TransactionActionScreen({
       return;
     }
 
-    const numericAmount = Number(amount);
-
-    if (!numericAmount || numericAmount <= 0) {
+    if (!isValidYuanInput(amount)) {
       setMessage(isDeposit ? "请输入存钱金额" : "请输入取钱金额");
       return;
     }
 
-    if (!isDeposit && !isEdit && numericAmount > account.currentBalance) {
+    const numAmount = Number(amount);
+
+    if (!isDeposit && !isEdit && numAmount > account.currentBalance) {
       setMessage("余额不足，不能增加这笔取钱流水");
       return;
     }
@@ -105,7 +106,7 @@ export function TransactionActionScreen({
     try {
       await onSubmit?.({
         type,
-        amount: numericAmount,
+        amount: numAmount,
         category,
         description: description || (isDeposit ? "行长手动存入" : "行长手动取出"),
         transactionDate: transactionDate.replace(/-/g, "."),
@@ -289,6 +290,7 @@ export function TransactionActionScreen({
                     inputMode="decimal"
                     type="number"
                     min="0"
+                    step="0.01"
                     placeholder="0"
                     className="min-w-0 flex-1 bg-transparent text-[28px] font-semibold text-[#C9182B] outline-none placeholder:text-[#E2B0B5]"
                   />

@@ -1,25 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { AccountSummary, BankRequest, RequestTab, TabId, Transaction, TransactionType, UserProfile } from "@/data/mock-bank";
-import {
-  approveWithdrawal,
-  completeRequest,
-  confirmDepositRequest,
-  createAdminTransaction,
-  deleteGoal,
-  deleteRequest,
-  deleteTransaction,
-  getExistingStefBankSession,
-  loadStefBankSnapshot,
-  rejectRequest,
-  signInStefBank,
-  signOutStefBank,
-  submitBankRequest,
-  updateTransaction,
-  upsertGoal,
-} from "@/lib/stefbank-supabase";
-import type { GoalInput, RequestInput, TransactionInput } from "@/lib/stefbank-supabase";
+import type { AccountSummary, BankRequest, RequestTab, TabId, Transaction, TransactionType, UserProfile } from "@/data/bank-types";
+import { getBankDataSource } from "@/lib/bank-data-source-factory";
+import type { BankSnapshot, GoalInput, RequestInput, TransactionInput } from "@/lib/bank-data-source";
+import { useToast } from "./ToastProvider";
 import { AppHeader } from "./AppHeader";
 import { BottomNav } from "./BottomNav";
 import { HomePanel } from "./HomePanel";
@@ -45,13 +30,16 @@ export function StefBankApp() {
   const [requests, setRequests] = useState<BankRequest[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isBooting, setIsBooting] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [appError, setAppError] = useState("");
   const contentRef = useRef<HTMLElement>(null);
+  const toast = useToast();
 
   useEffect(() => {
     let ignore = false;
 
-    getExistingStefBankSession()
+    getBankDataSource()
+      .getExistingSession()
       .then((snapshot) => {
         if (ignore || !snapshot) {
           return;
@@ -75,7 +63,7 @@ export function StefBankApp() {
     };
   }, []);
 
-  function applySnapshot(snapshot: Awaited<ReturnType<typeof loadStefBankSnapshot>>) {
+  function applySnapshot(snapshot: BankSnapshot) {
     setUser(snapshot.user);
     setAccountId(snapshot.accountId);
     setAccount(snapshot.account);
@@ -85,31 +73,56 @@ export function StefBankApp() {
   }
 
   async function refreshSnapshot() {
-    const snapshot = await loadStefBankSnapshot();
-    applySnapshot(snapshot);
+    setIsRefreshing(true);
+
+    try {
+      const snapshot = await getBankDataSource().loadSnapshot();
+      applySnapshot(snapshot);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "加载数据失败");
+      throw error;
+    } finally {
+      setIsRefreshing(false);
+    }
   }
 
   async function handleLogin(credentials: { username: string; password: string }) {
-    const snapshot = await signInStefBank(credentials.username, credentials.password);
-    applySnapshot(snapshot);
-    setActiveTab("home");
-    setMoneyAction(null);
-    setTransactionAction(null);
-    setIsGoalEditorOpen(false);
+    try {
+      const snapshot = await getBankDataSource().signIn(credentials.username, credentials.password);
+      applySnapshot(snapshot);
+      setActiveTab("home");
+      setMoneyAction(null);
+      setTransactionAction(null);
+      setIsGoalEditorOpen(false);
+      toast.success("登录成功");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "登录失败");
+      throw error;
+    }
   }
 
   async function handleRequestSubmit(input: RequestInput) {
-    await submitBankRequest(accountId, input);
-    await refreshSnapshot();
+    try {
+      await getBankDataSource().submitRequest(accountId, input);
+      await refreshSnapshot();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "提交失败");
+      throw error;
+    }
   }
 
   async function runAndRefresh(action: () => Promise<void>) {
-    await action();
-    await refreshSnapshot();
+    try {
+      await action();
+      await refreshSnapshot();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "操作失败");
+      throw error;
+    }
   }
 
   if (isBooting) {
-    return <FullScreenState text="正在打开车厘子银行..." />;
+    return <FullScreenState text="正在打开车厘子银行..." showSpinner />;
   }
 
   if (!user || !account) {
@@ -123,15 +136,20 @@ export function StefBankApp() {
   const role = user.role;
 
   async function logout() {
-    await signOutStefBank();
-    setUser(null);
-    setAccount(null);
-    setAccountId("");
-    setRequests([]);
-    setTransactions([]);
-    setActiveTab("home");
-    setMoneyAction(null);
-    setTransactionAction(null);
+    try {
+      await getBankDataSource().signOut();
+      setUser(null);
+      setAccount(null);
+      setAccountId("");
+      setRequests([]);
+      setTransactions([]);
+      setActiveTab("home");
+      setMoneyAction(null);
+      setTransactionAction(null);
+      toast.success("已退出登录");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "退出失败");
+    }
   }
 
   function navigate(tab: TabId) {
@@ -157,7 +175,7 @@ export function StefBankApp() {
         initialType={transactionAction === "new" ? null : transactionAction}
         onClose={() => setTransactionAction(null)}
         onSubmit={(transaction: TransactionInput & { transactionDate: string }) =>
-          runAndRefresh(() => createAdminTransaction(accountId, transaction))
+          runAndRefresh(() => getBankDataSource().createAdminTransaction(accountId, transaction))
         }
       />
     );
@@ -171,11 +189,11 @@ export function StefBankApp() {
         onClose={() => setEditingTransaction(null)}
         onSubmit={(transaction: TransactionInput & { transactionDate: string }) =>
           runAndRefresh(() =>
-            updateTransaction(editingTransaction.id, transaction),
+            getBankDataSource().updateTransaction(editingTransaction.id, transaction),
           )
         }
         onDelete={() =>
-          runAndRefresh(() => deleteTransaction(editingTransaction.id))
+          runAndRefresh(() => getBankDataSource().deleteTransaction(editingTransaction.id))
         }
       />
     );
@@ -198,12 +216,22 @@ export function StefBankApp() {
         account={account}
         existingGoal={account.goal}
         onSave={async (input: GoalInput) => {
-          await upsertGoal(accountId, input);
-          await refreshSnapshot();
+          try {
+            await getBankDataSource().upsertGoal(accountId, input);
+            await refreshSnapshot();
+          } catch (error) {
+            toast.error(error instanceof Error ? error.message : "保存失败");
+            throw error;
+          }
         }}
         onDelete={async () => {
-          await deleteGoal(accountId);
-          await refreshSnapshot();
+          try {
+            await getBankDataSource().deleteGoal(accountId);
+            await refreshSnapshot();
+          } catch (error) {
+            toast.error(error instanceof Error ? error.message : "删除失败");
+            throw error;
+          }
         }}
         onClose={() => setIsGoalEditorOpen(false)}
       />
@@ -218,6 +246,11 @@ export function StefBankApp() {
           user={user}
           onProfileClick={activeTab === "profile" ? undefined : () => navigate("profile")}
         />
+        {isRefreshing ? (
+          <div className="mt-2 overflow-hidden rounded-full bg-[#F3ECEA]">
+            <div className="progress-bar" />
+          </div>
+        ) : null}
         {appError ? (
           <p className="mt-4 rounded-[16px] bg-[#FCE8EA] px-4 py-3 text-[14px] text-[#C9182B]">
             {appError}
@@ -270,16 +303,16 @@ export function StefBankApp() {
               account={account}
               requests={requests}
               onStartMoneyAction={setMoneyAction}
-              onApproveRequest={(requestId, reviewNote) => runAndRefresh(() => approveWithdrawal(requestId, reviewNote))}
+              onApproveRequest={(requestId, reviewNote) => runAndRefresh(() => getBankDataSource().approveWithdrawal(requestId, reviewNote))}
               onCompleteRequest={(request) =>
                 runAndRefresh(() =>
                   request.requestType === "deposit"
-                    ? confirmDepositRequest(request.id)
-                    : completeRequest(request.id),
+                    ? getBankDataSource().confirmDepositRequest(request.id)
+                    : getBankDataSource().completeRequest(request.id),
                 )
               }
-              onRejectRequest={(requestId, reviewNote) => runAndRefresh(() => rejectRequest(requestId, reviewNote))}
-              onDeleteRequest={(requestId) => runAndRefresh(() => deleteRequest(requestId))}
+              onRejectRequest={(requestId, reviewNote) => runAndRefresh(() => getBankDataSource().rejectRequest(requestId, reviewNote))}
+              onDeleteRequest={(requestId) => runAndRefresh(() => getBankDataSource().deleteRequest(requestId))}
               role={role}
             />
           </section>
@@ -303,10 +336,11 @@ export function StefBankApp() {
   );
 }
 
-function FullScreenState({ text }: { text: string }) {
+function FullScreenState({ text, showSpinner = false }: { text: string; showSpinner?: boolean }) {
   return (
     <div className="min-h-dvh bg-[#FFF8F1]">
-      <main className="mx-auto flex min-h-dvh max-w-[430px] items-center justify-center px-6 text-center">
+      <main className="mx-auto flex min-h-dvh max-w-[430px] flex-col items-center justify-center gap-4 px-6 text-center">
+        {showSpinner ? <div className="spinner" /> : null}
         <p className="rounded-[18px] bg-white px-5 py-4 text-[15px] font-medium text-[#6D5553] shadow-[0_8px_24px_rgba(160,80,80,0.08)]">
           {text}
         </p>

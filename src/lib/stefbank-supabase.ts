@@ -4,10 +4,12 @@ import type {
   RequestTab,
   Transaction,
   TransactionType,
-  UserProfile,
   UserRole,
-} from "@/data/mock-bank";
+} from "@/data/bank-types";
+import type { BankSnapshot, GoalInput, RequestInput, TransactionInput } from "./bank-data-source";
 import { getSupabaseClient } from "./supabase-client";
+
+export type { BankSnapshot, GoalInput, RequestInput, TransactionInput } from "./bank-data-source";
 
 type ProfileRow = {
   id: string;
@@ -59,30 +61,6 @@ type RequestRow = {
   created_at: string;
 };
 
-export type BankSnapshot = {
-  accountId: string;
-  account: AccountSummary;
-  requests: BankRequest[];
-  transactions: Transaction[];
-  user: UserProfile;
-};
-
-export type RequestInput = {
-  requestType: RequestTab;
-  amount: number;
-  category: string;
-  urgency?: string;
-  paymentMethod: string;
-  note: string;
-};
-
-export type TransactionInput = {
-  type: TransactionType;
-  amount: number;
-  category: string;
-  description: string;
-};
-
 function usernameToEmail(username: string) {
   return `${username}@stefbank.local`;
 }
@@ -99,7 +77,7 @@ function formatDateText(value: string | Date) {
     .replace(/\//g, ".");
 }
 
-function mapProfile(row: ProfileRow): UserProfile {
+function mapProfile(row: ProfileRow) {
   return {
     id: row.id,
     username: row.username,
@@ -170,193 +148,189 @@ function mapAccount(row: AccountRow, goal: GoalRow, transactions: Transaction[])
   };
 }
 
-function requireNoError<T>(result: { data: T; error: { message: string } | null }) {
-  if (result.error) {
-    throw new Error(result.error.message);
+export class SupabaseBankDataSource {
+  private requireNoError<T>(result: { data: T; error: { message: string } | null }) {
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+
+    return result.data;
   }
 
-  return result.data;
-}
-
-async function callRpc(functionName: string, args: Record<string, unknown>) {
-  const supabase = getSupabaseClient();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const result = await (supabase.rpc as any)(functionName, args);
-  requireNoError(result as { data: unknown; error: { message: string } | null });
-}
-
-export async function signInStefBank(username: string, password: string) {
-  const normalizedUsername = username.trim().toLowerCase();
-  const email = usernameToEmail(normalizedUsername);
-
-  const supabase = getSupabaseClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-  if (error) {
-    throw new Error("账号或密码不正确，请重新输入");
+  private async callRpc(functionName: string, args: Record<string, unknown>) {
+    const supabase = getSupabaseClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result = await (supabase.rpc as any)(functionName, args);
+    this.requireNoError(result as { data: unknown; error: { message: string } | null });
   }
 
-  return loadStefBankSnapshot();
-}
+  async signIn(username: string, password: string): Promise<BankSnapshot> {
+    const normalizedUsername = username.trim().toLowerCase();
+    const email = usernameToEmail(normalizedUsername);
 
-export async function signOutStefBank() {
-  const supabase = getSupabaseClient();
-  await supabase.auth.signOut();
-}
+    const supabase = getSupabaseClient();
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
 
-export async function getExistingStefBankSession() {
-  const supabase = getSupabaseClient();
-  const { data, error } = await supabase.auth.getUser();
+    if (error) {
+      throw new Error("账号或密码不正确，请重新输入");
+    }
 
-  if (error || !data.user) {
-    return null;
+    return this.loadSnapshot();
   }
 
-  return loadStefBankSnapshot();
-}
-
-export async function loadStefBankSnapshot(): Promise<BankSnapshot> {
-  const supabase = getSupabaseClient();
-  const userResult = await supabase.auth.getUser();
-
-  if (userResult.error || !userResult.data.user) {
-    throw new Error("登录已失效，请重新登录");
+  async signOut(): Promise<void> {
+    const supabase = getSupabaseClient();
+    await supabase.auth.signOut();
   }
 
-  const profile = requireNoError(
-    await supabase.from("profiles").select("id, username, full_name, display_name, role, avatar_url").eq("id", userResult.data.user.id).single(),
-  ) as ProfileRow;
+  async getExistingSession(): Promise<BankSnapshot | null> {
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase.auth.getUser();
 
-  const memberRow = requireNoError(
-    await supabase
-      .from("account_members")
-      .select("account_id")
-      .eq("user_id", userResult.data.user.id)
-      .limit(1)
-      .single(),
-  ) as { account_id: string };
-  const selectedAccountId = memberRow.account_id;
+    if (error || !data.user) {
+      return null;
+    }
 
-  const account = requireNoError(
-    await supabase
-      .from("accounts")
-      .select("id, name, current_balance, updated_at")
-      .eq("id", selectedAccountId)
-      .single(),
-  ) as AccountRow;
+    return this.loadSnapshot();
+  }
 
-  // goals / transactions / requests 只依赖 account.id，可并行查询
-  const [goalResult, transactionResult, requestResult] = await Promise.all([
-    supabase
-      .from("goals")
-      .select("id, title, target_amount, current_amount, goal_type, metadata")
-      .eq("account_id", account.id)
-      .single(),
-    supabase
-      .from("transactions")
-      .select("id, type, amount, balance_after, category, description, transaction_date, status, created_at")
-      .eq("account_id", account.id)
-      .order("transaction_date", { ascending: false })
-      .order("created_at", { ascending: false }),
-    supabase
-      .from("requests")
-      .select("id, request_type, amount, category, urgency, payment_method, note, review_note, status, created_at")
-      .eq("account_id", account.id)
-      .order("created_at", { ascending: false }),
-  ]);
+  async loadSnapshot(): Promise<BankSnapshot> {
+    const supabase = getSupabaseClient();
+    const userResult = await supabase.auth.getUser();
 
-  const goal = requireNoError(goalResult) as unknown as GoalRow;
-  const transactionRows = requireNoError(transactionResult) as unknown as TransactionRow[];
-  const requestRows = requireNoError(requestResult) as unknown as RequestRow[];
+    if (userResult.error || !userResult.data.user) {
+      throw new Error("登录已失效，请重新登录");
+    }
 
-  const transactions = transactionRows.map(mapTransaction);
+    const profile = this.requireNoError(
+      await supabase.from("profiles").select("id, username, full_name, display_name, role, avatar_url").eq("id", userResult.data.user.id).single(),
+    ) as ProfileRow;
 
-  return {
-    accountId: account.id,
-    account: mapAccount(account, goal, transactions),
-    requests: requestRows.map(mapRequest),
-    transactions,
-    user: mapProfile(profile),
-  };
-}
+    const memberRow = this.requireNoError(
+      await supabase
+        .from("account_members")
+        .select("account_id")
+        .eq("user_id", userResult.data.user.id)
+        .limit(1)
+        .single(),
+    ) as { account_id: string };
+    const selectedAccountId = memberRow.account_id;
 
-export async function submitBankRequest(accountId: string, input: RequestInput) {
-  await callRpc("submit_request", {
-    p_account_id: accountId,
-    p_request_type: input.requestType,
-    p_amount: input.amount,
-    p_category: input.category,
-    p_urgency: input.urgency ?? null,
-    p_payment_method: input.paymentMethod,
-    p_note: input.note,
-  });
-}
+    const account = this.requireNoError(
+      await supabase
+        .from("accounts")
+        .select("id, name, current_balance, updated_at")
+        .eq("id", selectedAccountId)
+        .single(),
+    ) as AccountRow;
 
-export async function approveWithdrawal(requestId: string, reviewNote: string) {
-  await callRpc("approve_withdraw_request", { p_request_id: requestId, p_review_note: reviewNote });
-}
+    // goals / transactions / requests 只依赖 account.id，可并行查询
+    const [goalResult, transactionResult, requestResult] = await Promise.all([
+      supabase
+        .from("goals")
+        .select("id, title, target_amount, current_amount, goal_type, metadata")
+        .eq("account_id", account.id)
+        .single(),
+      supabase
+        .from("transactions")
+        .select("id, type, amount, balance_after, category, description, transaction_date, status, created_at")
+        .eq("account_id", account.id)
+        .order("transaction_date", { ascending: false })
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("requests")
+        .select("id, request_type, amount, category, urgency, payment_method, note, review_note, status, created_at")
+        .eq("account_id", account.id)
+        .order("created_at", { ascending: false }),
+    ]);
 
-export async function rejectRequest(requestId: string, reviewNote: string) {
-  await callRpc("reject_request", { p_request_id: requestId, p_review_note: reviewNote });
-}
+    const goal = this.requireNoError(goalResult) as unknown as GoalRow;
+    const transactionRows = this.requireNoError(transactionResult) as unknown as TransactionRow[];
+    const requestRows = this.requireNoError(requestResult) as unknown as RequestRow[];
 
-export async function completeRequest(requestId: string) {
-  await callRpc("complete_withdraw_request", { p_request_id: requestId });
-}
+    const transactions = transactionRows.map(mapTransaction);
 
-export async function confirmDepositRequest(requestId: string) {
-  await callRpc("confirm_deposit_request", { p_request_id: requestId });
-}
+    return {
+      accountId: account.id,
+      account: mapAccount(account, goal, transactions),
+      requests: requestRows.map(mapRequest),
+      transactions,
+      user: mapProfile(profile),
+    };
+  }
 
-export async function createAdminTransaction(accountId: string, input: TransactionInput) {
-  await callRpc("create_manual_transaction", {
-    p_account_id: accountId,
-    p_type: input.type,
-    p_amount: input.amount,
-    p_category: input.category,
-    p_description: input.description,
-  });
-}
+  async submitRequest(accountId: string, input: RequestInput): Promise<void> {
+    await this.callRpc("submit_request", {
+      p_account_id: accountId,
+      p_request_type: input.requestType,
+      p_amount: input.amount,
+      p_category: input.category,
+      p_urgency: input.urgency ?? null,
+      p_payment_method: input.paymentMethod,
+      p_note: input.note,
+    });
+  }
 
-export async function updateTransaction(
-  transactionId: string,
-  input: TransactionInput & { transactionDate: string },
-) {
-  await callRpc("update_transaction", {
-    p_transaction_id: transactionId,
-    p_type: input.type,
-    p_amount: input.amount,
-    p_category: input.category,
-    p_description: input.description,
-    p_transaction_date: input.transactionDate.replace(/\./g, "-"),
-  });
-}
+  async approveWithdrawal(requestId: string, reviewNote: string): Promise<void> {
+    await this.callRpc("approve_withdraw_request", { p_request_id: requestId, p_review_note: reviewNote });
+  }
 
-export async function deleteTransaction(transactionId: string) {
-  await callRpc("delete_transaction", { p_transaction_id: transactionId });
-}
+  async rejectRequest(requestId: string, reviewNote: string): Promise<void> {
+    await this.callRpc("reject_request", { p_request_id: requestId, p_review_note: reviewNote });
+  }
 
-export async function deleteRequest(requestId: string) {
-  await callRpc("delete_request", { p_request_id: requestId });
-}
+  async completeRequest(requestId: string): Promise<void> {
+    await this.callRpc("complete_withdraw_request", { p_request_id: requestId });
+  }
 
-export type GoalInput = {
-  title: string;
-  targetAmount: number;
-  goalType: string;
-  metadata: Record<string, string>;
-};
+  async confirmDepositRequest(requestId: string): Promise<void> {
+    await this.callRpc("confirm_deposit_request", { p_request_id: requestId });
+  }
 
-export async function upsertGoal(accountId: string, input: GoalInput) {
-  await callRpc("upsert_goal", {
-    p_account_id: accountId,
-    p_title: input.title,
-    p_target_amount: input.targetAmount,
-    p_goal_type: input.goalType,
-    p_metadata: input.metadata,
-  });
-}
+  async createAdminTransaction(accountId: string, input: TransactionInput): Promise<void> {
+    await this.callRpc("create_manual_transaction", {
+      p_account_id: accountId,
+      p_type: input.type,
+      p_amount: input.amount,
+      p_category: input.category,
+      p_description: input.description,
+    });
+  }
 
-export async function deleteGoal(accountId: string) {
-  await callRpc("delete_goal", { p_account_id: accountId });
+  async updateTransaction(
+    transactionId: string,
+    input: TransactionInput & { transactionDate: string },
+  ): Promise<void> {
+    await this.callRpc("update_transaction", {
+      p_transaction_id: transactionId,
+      p_type: input.type,
+      p_amount: input.amount,
+      p_category: input.category,
+      p_description: input.description,
+      p_transaction_date: input.transactionDate.replace(/\./g, "-"),
+    });
+  }
+
+  async deleteTransaction(transactionId: string): Promise<void> {
+    await this.callRpc("delete_transaction", { p_transaction_id: transactionId });
+  }
+
+  async deleteRequest(requestId: string): Promise<void> {
+    await this.callRpc("delete_request", { p_request_id: requestId });
+  }
+
+  async upsertGoal(accountId: string, input: GoalInput): Promise<void> {
+    await this.callRpc("upsert_goal", {
+      p_account_id: accountId,
+      p_title: input.title,
+      p_target_amount: input.targetAmount,
+      p_goal_type: input.goalType,
+      p_metadata: input.metadata,
+    });
+  }
+
+  async deleteGoal(accountId: string): Promise<void> {
+    await this.callRpc("delete_goal", { p_account_id: accountId });
+  }
 }

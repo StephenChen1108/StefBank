@@ -3,10 +3,11 @@
 import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ArrowLeft, Check, ChevronRight, Sparkles, Trash2 } from "lucide-react";
-import type { AccountSummary, SavingGoal } from "@/data/mock-bank";
+import type { AccountSummary, SavingGoal } from "@/data/bank-types";
 import { GOAL_TYPES, PRESET_AMOUNTS, getGoalType, type GoalTypeId } from "@/data/goal-types";
 import { formatCurrency } from "@/lib/format";
-import type { GoalInput } from "@/lib/stefbank-supabase";
+import type { GoalInput } from "@/lib/bank-data-source";
+import { isValidYuanInput } from "@/lib/money";
 
 type GoalEditorScreenProps = {
   account: AccountSummary;
@@ -98,24 +99,25 @@ export function GoalEditorScreen({
     }
 
     const trimmedTitle = title.trim();
-    const numericAmount = Number(targetAmount);
 
     if (!trimmedTitle) {
       setMessage("请填写目标名称");
       return;
     }
 
-    if (!numericAmount || numericAmount <= 0) {
+    if (!isValidYuanInput(targetAmount)) {
       setMessage("请填写目标金额");
       return;
     }
+
+    const amount = Number(targetAmount);
 
     setIsSubmitting(true);
 
     try {
       await onSave({
         title: trimmedTitle,
-        targetAmount: numericAmount,
+        targetAmount: amount,
         goalType,
         metadata,
       });
@@ -386,6 +388,7 @@ function GoalFormView({
             inputMode="decimal"
             type="number"
             min="0"
+            step="0.01"
             placeholder="0"
             className="min-w-0 flex-1 bg-transparent text-[26px] font-semibold text-[#C9182B] outline-none placeholder:text-[#E2B0B5]"
           />

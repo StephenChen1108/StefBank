@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ArrowDownToLine, ArrowRight, ArrowUpFromLine, CheckCircle2, Clock3, MessageSquareText, Send, Trash2, X, XCircle } from "lucide-react";
-import type { AccountSummary, BankRequest, RequestTab, UserRole } from "@/data/mock-bank";
+import type { AccountSummary, BankRequest, RequestTab, UserRole } from "@/data/bank-types";
 import { formatCurrency, requestLabel, statusLabel, statusTone } from "@/lib/format";
 import { ActionButton, Card, FeatureCard } from "./ui";
 

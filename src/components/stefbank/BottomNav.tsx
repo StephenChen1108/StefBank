@@ -1,6 +1,6 @@
 import { ClipboardList, Home, PenLine, UserRound } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { TabId, UserRole } from "@/data/mock-bank";
+import type { TabId, UserRole } from "@/data/bank-types";
 
 type BottomNavProps = {
   activeTab: TabId;

@@ -4,10 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ArrowLeft, Check, Send } from "lucide-react";
 import Image from "next/image";
-import type { AccountSummary, RequestTab } from "@/data/mock-bank";
+import type { AccountSummary, RequestTab } from "@/data/bank-types";
 import { EXPENSE_CATEGORIES, type ExpenseCategory } from "@/data/categories";
-import type { RequestInput } from "@/lib/stefbank-supabase";
+import type { RequestInput } from "@/lib/bank-data-source";
 import { formatCurrency } from "@/lib/format";
+import { isValidYuanInput } from "@/lib/money";
 
 type MoneyActionScreenProps = {
   account: AccountSummary;
@@ -66,14 +67,14 @@ export function MoneyActionScreen({
       return;
     }
 
-    const numericAmount = Number(amount);
-
-    if (!numericAmount || numericAmount <= 0) {
+    if (!isValidYuanInput(amount)) {
       setMessage(isWithdraw ? "请输入取款金额" : "请输入存款金额");
       return;
     }
 
-    if (isWithdraw && numericAmount > account.currentBalance) {
+    const numAmount = Number(amount);
+
+    if (isWithdraw && numAmount > account.currentBalance) {
       setMessage("余额不足，暂时不能提交这笔申请");
       return;
     }
@@ -83,7 +84,7 @@ export function MoneyActionScreen({
     try {
       await onSubmitRequest({
         requestType: mode,
-        amount: numericAmount,
+        amount: numAmount,
         category: isWithdraw ? category : "存款",
         urgency: isWithdraw ? urgency : undefined,
         paymentMethod,
@@ -140,6 +141,7 @@ export function MoneyActionScreen({
                 inputMode="decimal"
                 type="number"
                 min="0"
+                step="0.01"
                 placeholder="0"
                 className="min-w-0 flex-1 bg-transparent text-[28px] font-semibold text-[#C9182B] outline-none placeholder:text-[#E2B0B5]"
               />

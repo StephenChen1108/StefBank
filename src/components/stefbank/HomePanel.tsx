@@ -7,7 +7,7 @@
   Target,
   WalletCards,
 } from "lucide-react";
-import type { AccountSummary, RequestTab, TabId, Transaction, TransactionType, UserRole } from "@/data/mock-bank";
+import type { AccountSummary, RequestTab, TabId, Transaction, TransactionType, UserRole } from "@/data/bank-types";
 import { formatCurrency, signedAmount, transactionLabel } from "@/lib/format";
 import { goalTypeIcon } from "@/data/goal-types";
 import { ActionButton, Card, FeatureCard, IconBadge } from "./ui";

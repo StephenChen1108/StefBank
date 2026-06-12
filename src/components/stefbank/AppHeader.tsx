@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { Bell, UserRound } from "lucide-react";
-import type { UserProfile } from "@/data/mock-bank";
+import type { UserProfile } from "@/data/bank-types";
 
 type AppHeaderProps = {
   showNotification?: boolean;

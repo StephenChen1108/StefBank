@@ -94,3 +94,56 @@ input[type="number"]::-webkit-outer-spin-button {
   background: linear-gradient(135deg, rgba(244, 107, 122, 0.14), rgba(255, 255, 255, 0.18));
   transform: rotate(-9deg);
 }
+
+/* Loading spinner */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  width: 24px;
+  height: 24px;
+  border: 3px solid #FCE8EA;
+  border-top-color: #C9182B;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+/* Top progress bar */
+@keyframes progress-bar {
+  0% {
+    width: 0;
+  }
+  50% {
+    width: 70%;
+  }
+  100% {
+    width: 100%;
+  }
+}
+
+.progress-bar {
+  height: 2px;
+  background: linear-gradient(90deg, #F46B7A, #C9182B);
+  animation: progress-bar 1.2s ease-in-out infinite;
+  transform-origin: left;
+}
+
+/* Skeleton pulse */
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.skeleton {
+  background: #F3ECEA;
+  border-radius: 8px;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
+}

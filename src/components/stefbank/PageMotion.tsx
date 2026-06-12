@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { gsap } from "gsap";
-import type { TabId } from "@/data/mock-bank";
+import type { TabId } from "@/data/bank-types";
 
 type PageMotionProps = {
   activeTab: TabId;

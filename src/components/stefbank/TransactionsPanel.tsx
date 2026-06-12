@@ -11,7 +11,7 @@ import {
   Plus,
   ReceiptText,
 } from "lucide-react";
-import type { Transaction, TransactionFilter, TransactionType, UserRole } from "@/data/mock-bank";
+import type { Transaction, TransactionFilter, TransactionType, UserRole } from "@/data/bank-types";
 import { formatCurrency, signedAmount, transactionLabel } from "@/lib/format";
 import { Card, IconBadge, SegmentedControl } from "./ui";
 

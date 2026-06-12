@@ -13,7 +13,7 @@ import {
   Tag,
   Target,
 } from "lucide-react";
-import type { UserProfile } from "@/data/mock-bank";
+import type { UserProfile } from "@/data/bank-types";
 import { roleLabel } from "@/lib/format";
 import { Card } from "./ui";
 

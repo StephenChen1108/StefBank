@@ -4,7 +4,7 @@ import type {
   Transaction,
   TransactionType,
   UserRole,
-} from "@/data/mock-bank";
+} from "@/data/bank-types";
 
 const currencyFormatter = new Intl.NumberFormat("zh-CN", {
   style: "currency",
