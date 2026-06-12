@@ -131,19 +131,3 @@ input[type="number"]::-webkit-outer-spin-button {
   transform-origin: left;
 }
 
-/* Skeleton pulse */
-@keyframes skeleton-pulse {
-  0%,
-  100% {
-    opacity: 0.4;
-  }
-  50% {
-    opacity: 0.8;
-  }
-}
-
-.skeleton {
-  background: #F3ECEA;
-  border-radius: 8px;
-  animation: skeleton-pulse 1.5s ease-in-out infinite;
-}

@@ -21,6 +21,7 @@ type ProfilePanelProps = {
   user: UserProfile;
   onLogout: () => void;
   onOpenGoalEditor: () => void;
+  onSettingClick?: (label: string) => void;
 };
 
 const settingGroups = [

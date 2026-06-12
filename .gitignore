@@ -47,7 +47,5 @@ dev-server.err.log
 # claude
 .claude/
 .mcp.json
-.mcp.json
-.mcp.json
 
 .vercel
