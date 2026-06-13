@@ -85,7 +85,7 @@ const PROFILES: MockProfile[] = [
     name: "应展硕",
     displayName: "应展硕",
     role: "depositor",
-    avatarUrl: "/yezi-avatar-compressed.jpg",
+    avatarUrl: "/yezi-avatar.jpg",
   },
 ];
 
