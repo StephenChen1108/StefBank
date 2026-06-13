@@ -17,8 +17,12 @@ import { RequestsPanel } from "./RequestsPanel";
 import { TransactionActionScreen } from "./TransactionActionScreen";
 import { TransactionsPanel } from "./TransactionsPanel";
 
-export function StefBankApp() {
-  const [activeTab, setActiveTab] = useState<TabId>("home");
+type StefBankAppProps = {
+  initialTab?: TabId;
+};
+
+export function StefBankApp({ initialTab = "home" }: StefBankAppProps = {}) {
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
   const [moneyAction, setMoneyAction] = useState<RequestTab | null>(null);
   const [transactionAction, setTransactionAction] = useState<TransactionType | "new" | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -90,7 +94,7 @@ export function StefBankApp() {
     try {
       const snapshot = await getBankDataSource().signIn(credentials.username, credentials.password);
       applySnapshot(snapshot);
-      setActiveTab("home");
+      setActiveTab(initialTab);
       setMoneyAction(null);
       setTransactionAction(null);
       setIsGoalEditorOpen(false);

@@ -78,13 +78,15 @@ function formatDateText(value: string | Date) {
 }
 
 function mapProfile(row: ProfileRow) {
+  const avatarUrl = row.avatar_url === "/yezi-avatar-compressed.jpg" ? "/yezi-avatar.jpg" : row.avatar_url;
+
   return {
     id: row.id,
     username: row.username,
     name: row.full_name,
     displayName: row.display_name,
     role: row.role,
-    avatarUrl: row.avatar_url ?? undefined,
+    avatarUrl: avatarUrl ?? undefined,
   };
 }
 
@@ -157,7 +159,6 @@ export class SupabaseBankDataSource {
     return result.data;
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private async callRpc(functionName: string, args: Record<string, unknown>) {
     const supabase = getSupabaseClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -261,15 +262,26 @@ export class SupabaseBankDataSource {
   }
 
   async submitRequest(accountId: string, input: RequestInput): Promise<void> {
-    await this.callRpc("submit_request", {
-      p_account_id: accountId,
-      p_request_type: input.requestType,
-      p_amount: input.amount,
-      p_category: input.category,
-      p_urgency: input.urgency ?? null,
-      p_payment_method: input.paymentMethod,
-      p_note: input.note,
+    const supabase = getSupabaseClient();
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError || !sessionData.session?.access_token) {
+      throw new Error("登录已失效，请重新登录");
+    }
+
+    const response = await fetch("/api/requests", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${sessionData.session.access_token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ accountId, input }),
     });
+
+    if (!response.ok) {
+      const result = await response.json().catch(() => null);
+      throw new Error(result?.error ?? "提交失败，请稍后再试");
+    }
   }
 
   async approveWithdrawal(requestId: string, reviewNote: string): Promise<void> {

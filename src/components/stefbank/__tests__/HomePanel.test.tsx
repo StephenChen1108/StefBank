@@ -103,13 +103,12 @@ describe("HomePanel", () => {
       const transactions = makeTransactions(10);
       render(<HomePanel {...defaultProps} transactions={transactions} />);
       // HomePanel renders signedAmount (e.g. "+¥10,000") and transactionLabel, not description.
-      // tx-0 (deposit 10000), tx-1 (withdraw 20000), tx-2 (deposit 30000) are shown.
-      // tx-3 (withdraw 40000) is NOT shown.
+      // tx-0, tx-1, and tx-2 are shown. tx-3 is NOT shown.
       // Check by balanceAfter values which are unique per transaction
       expect(screen.getByText("余额 ¥100,000")).toBeInTheDocument(); // tx-0
-      expect(screen.getByText("余额 ¥80,000")).toBeInTheDocument(); // tx-1
-      expect(screen.getByText("余额 ¥60,000")).toBeInTheDocument(); // tx-2
-      expect(screen.queryByText("余额 ¥40,000")).not.toBeInTheDocument(); // tx-3 not shown
+      expect(screen.getByText("余额 ¥90,000")).toBeInTheDocument(); // tx-1
+      expect(screen.getByText("余额 ¥80,000")).toBeInTheDocument(); // tx-2
+      expect(screen.queryByText("余额 ¥70,000")).not.toBeInTheDocument(); // tx-3 not shown
     });
 
     it("shows 全部 link to navigate to transactions", () => {

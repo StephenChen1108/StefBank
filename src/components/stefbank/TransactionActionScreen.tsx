@@ -8,7 +8,7 @@ import Image from "next/image";
 import type { AccountSummary, Transaction, TransactionType } from "@/data/bank-types";
 import { ALL_CATEGORIES, type AllCategory } from "@/data/categories";
 import { formatCurrency } from "@/lib/format";
-import { isValidYuanInput } from "@/lib/money";
+import { centsToYuan, isValidYuanInput } from "@/lib/money";
 import { SegmentedControl } from "./ui";
 
 type TransactionActionScreenProps = {
