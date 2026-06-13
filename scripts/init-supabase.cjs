@@ -21,7 +21,7 @@ const users = [
     role: "depositor",
     fullName: "应展硕",
     displayName: "应展硕",
-    avatarUrl: "/yezi-avatar.jpg",
+    avatarUrl: "/yezi-avatar-compressed.jpg",
   },
 ];
 
