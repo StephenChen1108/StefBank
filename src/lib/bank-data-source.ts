@@ -38,6 +38,28 @@ export type GoalInput = {
   metadata: Record<string, string>;
 };
 
+export type UserSettings = {
+  barkDeviceKey?: string;
+  notifyWithdrawal?: boolean;
+  notifyDeposit?: boolean;
+  enabledCategories?: string[];
+};
+
+export type CustomTag = {
+  id: string;
+  name: string;
+  createdAt: string;
+};
+
+export type NotificationLog = {
+  id: string;
+  type: "withdrawal_request" | "deposit_confirmed" | "test";
+  title: string;
+  body: string;
+  status: "sent" | "failed";
+  createdAt: string;
+};
+
 export interface BankDataSource {
   signIn(username: string, password: string): Promise<BankSnapshot>;
   signOut(): Promise<void>;
@@ -55,4 +77,12 @@ export interface BankDataSource {
   deleteRequest(requestId: string): Promise<void>;
   upsertGoal(accountId: string, input: GoalInput): Promise<void>;
   deleteGoal(accountId: string): Promise<void>;
+
+  changePassword(currentPassword: string, newPassword: string): Promise<void>;
+  getUserSettings(): Promise<UserSettings>;
+  updateUserSettings(settings: UserSettings): Promise<void>;
+  getCustomTags(): Promise<CustomTag[]>;
+  addCustomTag(name: string): Promise<CustomTag>;
+  deleteCustomTag(tagId: string): Promise<void>;
+  getNotificationLogs(): Promise<NotificationLog[]>;
 }

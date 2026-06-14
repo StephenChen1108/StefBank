@@ -175,13 +175,17 @@ export async function onRequestPost(context: PagesFunctionContext) {
   const createdRequest = data as CreatedRequestRow | null;
 
   if (createdRequest?.request_type === "withdraw" && createdRequest.status === "pending") {
-    try {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("username, full_name, display_name")
-        .eq("id", createdRequest.requester_id)
-        .single();
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("username, full_name, display_name")
+      .eq("id", createdRequest.requester_id)
+      .single();
 
+    const title = "取款申请提醒";
+    const body = `${getRequesterName(profile as ProfileRow | null)} 申请取款 ${currencyFormatter.format(createdRequest.amount)}`;
+    let status: "sent" | "failed" = "sent";
+
+    try {
       await sendWithdrawalRequestBarkNotification({
         deviceKey: env.BARK_DEVICE_KEY,
         requesterName: getRequesterName(profile as ProfileRow | null),
@@ -191,6 +195,19 @@ export async function onRequestPost(context: PagesFunctionContext) {
       });
     } catch (error) {
       console.error("Failed to send Bark withdrawal notification", error);
+      status = "failed";
+    }
+
+    try {
+      await supabase.rpc("log_notification", {
+        p_user_id: createdRequest.requester_id,
+        p_type: "withdraw_request",
+        p_title: title,
+        p_body: body,
+        p_status: status,
+      });
+    } catch (error) {
+      console.error("Failed to log notification", error);
     }
   }
 

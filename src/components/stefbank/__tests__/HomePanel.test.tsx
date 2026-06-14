@@ -111,10 +111,10 @@ describe("HomePanel", () => {
       expect(screen.queryByText("余额 ¥70,000")).not.toBeInTheDocument(); // tx-3 not shown
     });
 
-    it("shows 全部 link to navigate to transactions", () => {
+    it("shows 查看全部 link to navigate to transactions", () => {
       const onNavigate = vi.fn();
       render(<HomePanel {...defaultProps} onNavigate={onNavigate} />);
-      fireEvent.click(screen.getByText("全部"));
+      fireEvent.click(screen.getByText("查看全部"));
       expect(onNavigate).toHaveBeenCalledWith("transactions");
     });
   });

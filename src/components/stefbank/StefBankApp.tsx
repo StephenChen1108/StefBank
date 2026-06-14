@@ -9,11 +9,18 @@ import { AppHeader } from "./AppHeader";
 import { BottomNav } from "./BottomNav";
 import { HomePanel } from "./HomePanel";
 import { LoginPanel } from "./LoginPanel";
+import { AboutScreen } from "./AboutScreen";
+import { AccountSecurityScreen } from "./AccountSecurityScreen";
+import { DataBackupScreen } from "./DataBackupScreen";
+import { ExportBillsScreen } from "./ExportBillsScreen";
 import { GoalEditorScreen } from "./GoalEditorScreen";
 import { MoneyActionScreen } from "./MoneyActionScreen";
+import { NotificationScreen } from "./NotificationScreen";
 import { PageMotion } from "./PageMotion";
 import { ProfilePanel } from "./ProfilePanel";
 import { RequestsPanel } from "./RequestsPanel";
+import { SavingsTipsScreen } from "./SavingsTipsScreen";
+import { TagManagementScreen } from "./TagManagementScreen";
 import { TransactionActionScreen } from "./TransactionActionScreen";
 import { TransactionsPanel } from "./TransactionsPanel";
 
@@ -28,6 +35,7 @@ export function StefBankApp({ initialTab = "home" }: StefBankAppProps = {}) {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [viewingTransaction, setViewingTransaction] = useState<Transaction | null>(null);
   const [isGoalEditorOpen, setIsGoalEditorOpen] = useState(false);
+  const [settingsScreen, setSettingsScreen] = useState<string | null>(null);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [accountId, setAccountId] = useState("");
   const [account, setAccount] = useState<AccountSummary | null>(null);
@@ -161,6 +169,19 @@ export function StefBankApp({ initialTab = "home" }: StefBankAppProps = {}) {
     contentRef.current?.scrollTo({ top: 0, behavior: "auto" });
   }
 
+  function handleSettingClick(label: string) {
+    const map: Record<string, string> = {
+      "账户与安全": "account-security",
+      "通知设置": "notification",
+      "标签管理": "tag-management",
+      "数据备份": "data-backup",
+      "导出账单": "export-bills",
+      "关于我们": "about",
+      "StefBank 存款小贴士": "savings-tips",
+    };
+    setSettingsScreen(map[label] ?? null);
+  }
+
   if (moneyAction) {
     return (
       <MoneyActionScreen
@@ -240,6 +261,52 @@ export function StefBankApp({ initialTab = "home" }: StefBankAppProps = {}) {
         onClose={() => setIsGoalEditorOpen(false)}
       />
     );
+  }
+
+  if (settingsScreen === "account-security") {
+    return (
+      <AccountSecurityScreen
+        user={user}
+        onLogout={logout}
+        onClose={() => setSettingsScreen(null)}
+      />
+    );
+  }
+
+  if (settingsScreen === "notification") {
+    return <NotificationScreen onClose={() => setSettingsScreen(null)} />;
+  }
+
+  if (settingsScreen === "tag-management") {
+    return <TagManagementScreen onClose={() => setSettingsScreen(null)} />;
+  }
+
+  if (settingsScreen === "data-backup") {
+    return (
+      <DataBackupScreen
+        account={account}
+        transactions={transactions}
+        requests={requests}
+        onClose={() => setSettingsScreen(null)}
+      />
+    );
+  }
+
+  if (settingsScreen === "export-bills") {
+    return (
+      <ExportBillsScreen
+        transactions={transactions}
+        onClose={() => setSettingsScreen(null)}
+      />
+    );
+  }
+
+  if (settingsScreen === "about") {
+    return <AboutScreen onClose={() => setSettingsScreen(null)} />;
+  }
+
+  if (settingsScreen === "savings-tips") {
+    return <SavingsTipsScreen onClose={() => setSettingsScreen(null)} />;
   }
 
   return (
@@ -330,6 +397,7 @@ export function StefBankApp({ initialTab = "home" }: StefBankAppProps = {}) {
               user={user}
               onLogout={logout}
               onOpenGoalEditor={() => setIsGoalEditorOpen(true)}
+              onSettingClick={handleSettingClick}
             />
           </section>
         </main>

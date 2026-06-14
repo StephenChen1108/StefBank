@@ -6,7 +6,7 @@ import type {
   UserProfile,
   UserRole,
 } from "@/data/bank-types";
-import type { BankDataSource, BankSnapshot, GoalInput, RequestInput, TransactionInput } from "./bank-data-source";
+import type { BankDataSource, BankSnapshot, CustomTag, GoalInput, NotificationLog, RequestInput, TransactionInput, UserSettings } from "./bank-data-source";
 
 type MockProfile = {
   id: string;
@@ -484,5 +484,41 @@ export class MockBankDataSource implements BankDataSource {
     this.goal.currentAmount = 0;
     this.goal.goalType = "custom";
     this.goal.metadata = {};
+  }
+
+  async changePassword(_currentPassword: string, _newPassword: string): Promise<void> {
+    await randomDelay();
+    randomError();
+  }
+
+  async getUserSettings(): Promise<UserSettings> {
+    await randomDelay();
+    return { notifyWithdrawal: true, notifyDeposit: true };
+  }
+
+  async updateUserSettings(_settings: UserSettings): Promise<void> {
+    await randomDelay();
+    randomError();
+  }
+
+  async getCustomTags(): Promise<CustomTag[]> {
+    await randomDelay();
+    return [];
+  }
+
+  async addCustomTag(name: string): Promise<CustomTag> {
+    await randomDelay();
+    randomError();
+    return { id: `tag-${Date.now()}`, name, createdAt: formatDateText(new Date()) };
+  }
+
+  async deleteCustomTag(_tagId: string): Promise<void> {
+    await randomDelay();
+    randomError();
+  }
+
+  async getNotificationLogs(): Promise<NotificationLog[]> {
+    await randomDelay();
+    return [];
   }
 }

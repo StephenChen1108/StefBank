@@ -6,10 +6,10 @@ import type {
   TransactionType,
   UserRole,
 } from "@/data/bank-types";
-import type { BankSnapshot, GoalInput, RequestInput, TransactionInput } from "./bank-data-source";
+import type { BankSnapshot, CustomTag, GoalInput, NotificationLog, RequestInput, TransactionInput, UserSettings } from "./bank-data-source";
 import { getSupabaseClient } from "./supabase-client";
 
-export type { BankSnapshot, GoalInput, RequestInput, TransactionInput } from "./bank-data-source";
+export type { BankSnapshot, CustomTag, GoalInput, NotificationLog, RequestInput, TransactionInput, UserSettings } from "./bank-data-source";
 
 type ProfileRow = {
   id: string;
@@ -159,11 +159,12 @@ export class SupabaseBankDataSource {
     return result.data;
   }
 
-  private async callRpc(functionName: string, args: Record<string, unknown>) {
+  private async callRpc<T = void>(functionName: string, args: Record<string, unknown>): Promise<T> {
     const supabase = getSupabaseClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const result = await (supabase.rpc as any)(functionName, args);
     this.requireNoError(result as { data: unknown; error: { message: string } | null });
+    return (result as { data: T }).data;
   }
 
   async signIn(username: string, password: string): Promise<BankSnapshot> {
@@ -344,5 +345,175 @@ export class SupabaseBankDataSource {
 
   async deleteGoal(accountId: string): Promise<void> {
     await this.callRpc("delete_goal", { p_account_id: accountId });
+  }
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    const supabase = getSupabaseClient();
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+
+    if (sessionError || !sessionData.session) {
+      throw new Error("登录已失效，请重新登录");
+    }
+
+    const email = sessionData.session.user.email;
+
+    if (!email) {
+      throw new Error("无法获取账号信息");
+    }
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password: currentPassword,
+    });
+
+    if (signInError) {
+      throw new Error("当前密码不正确");
+    }
+
+    const { error: updateError } = await supabase.auth.updateUser({
+      password: newPassword,
+    });
+
+    if (updateError) {
+      throw new Error("密码修改失败，请稍后再试");
+    }
+  }
+
+  async getUserSettings(): Promise<UserSettings> {
+    const supabase = getSupabaseClient();
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !userData.user) {
+      throw new Error("登录已失效，请重新登录");
+    }
+
+    const result = (await supabase
+      .from("user_settings")
+      .select("settings")
+      .eq("user_id", userData.user.id)
+      .single()) as { error: unknown; data: { settings: Record<string, unknown> } | null };
+
+    if (result.error || !result.data) {
+      return {};
+    }
+
+    const raw = result.data.settings;
+
+    return {
+      barkDeviceKey: typeof raw.bark_device_key === "string" ? (raw.bark_device_key as string) : undefined,
+      notifyWithdrawal: typeof raw.notify_withdrawal === "boolean" ? (raw.notify_withdrawal as boolean) : true,
+      notifyDeposit: typeof raw.notify_deposit === "boolean" ? (raw.notify_deposit as boolean) : true,
+      enabledCategories: Array.isArray(raw.enabled_categories) ? (raw.enabled_categories as string[]) : undefined,
+    };
+  }
+
+  async updateUserSettings(settings: UserSettings): Promise<void> {
+    const supabase = getSupabaseClient();
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !userData.user) {
+      throw new Error("登录已失效，请重新登录");
+    }
+
+    const dbSettings: Record<string, unknown> = {};
+
+    if (settings.barkDeviceKey !== undefined) {
+      dbSettings.bark_device_key = settings.barkDeviceKey;
+    }
+
+    if (settings.notifyWithdrawal !== undefined) {
+      dbSettings.notify_withdrawal = settings.notifyWithdrawal;
+    }
+
+    if (settings.notifyDeposit !== undefined) {
+      dbSettings.notify_deposit = settings.notifyDeposit;
+    }
+
+    if (settings.enabledCategories !== undefined) {
+      dbSettings.enabled_categories = settings.enabledCategories;
+    }
+
+    await this.callRpc("upsert_user_settings", {
+      p_user_id: userData.user.id,
+      p_settings: dbSettings,
+    });
+  }
+
+  async getCustomTags(): Promise<CustomTag[]> {
+    const supabase = getSupabaseClient();
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !userData.user) {
+      throw new Error("登录已失效，请重新登录");
+    }
+
+    const result = await supabase
+      .from("custom_tags")
+      .select("id, name, created_at")
+      .eq("user_id", userData.user.id)
+      .order("created_at", { ascending: true });
+
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+
+    return (result.data ?? []).map((row: { id: string; name: string; created_at: string }) => ({
+      id: row.id,
+      name: row.name,
+      createdAt: row.created_at,
+    }));
+  }
+
+  async addCustomTag(name: string): Promise<CustomTag> {
+    const supabase = getSupabaseClient();
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !userData.user) {
+      throw new Error("登录已失效，请重新登录");
+    }
+
+    const row = await this.callRpc<{ id: string; name: string; created_at: string }>("add_custom_tag", {
+      p_user_id: userData.user.id,
+      p_name: name.trim(),
+    });
+
+    return {
+      id: row.id,
+      name: row.name,
+      createdAt: row.created_at,
+    };
+  }
+
+  async deleteCustomTag(tagId: string): Promise<void> {
+    await this.callRpc("delete_custom_tag", { p_tag_id: tagId });
+  }
+
+  async getNotificationLogs(): Promise<NotificationLog[]> {
+    const supabase = getSupabaseClient();
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+
+    if (userError || !userData.user) {
+      throw new Error("登录已失效，请重新登录");
+    }
+
+    const result = await supabase
+      .from("notification_logs")
+      .select("id, type, title, body, status, created_at")
+      .eq("user_id", userData.user.id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+
+    return (result.data ?? []).map((row: { id: string; type: string; title: string; body: string; status: string; created_at: string }) => ({
+      id: row.id,
+      type: row.type as NotificationLog["type"],
+      title: row.title,
+      body: row.body,
+      status: row.status as NotificationLog["status"],
+      createdAt: row.created_at,
+    }));
   }
 }

@@ -1,10 +1,8 @@
 ﻿import Image from "next/image";
 import {
   Bell,
-  ChartPie,
   ChevronRight,
   Cloud,
-  CreditCard,
   Download,
   Info,
   Landmark,
@@ -27,11 +25,7 @@ type ProfilePanelProps = {
 const settingGroups = [
   [
     { label: "账户与安全", icon: ShieldCheck },
-    { label: "收款账户管理", icon: CreditCard },
     { label: "通知设置", icon: Bell },
-  ],
-  [
-    { label: "预算管理", icon: ChartPie },
     { label: "标签管理", icon: Tag },
   ],
   [
@@ -41,7 +35,7 @@ const settingGroups = [
   ],
 ];
 
-export function ProfilePanel({ user, onLogout, onOpenGoalEditor }: ProfilePanelProps) {
+export function ProfilePanel({ user, onLogout, onOpenGoalEditor, onSettingClick }: ProfilePanelProps) {
   return (
     <div className="space-y-4">
       <Card className="px-5 py-5" data-animate-item>
@@ -114,6 +108,7 @@ export function ProfilePanel({ user, onLogout, onOpenGoalEditor }: ProfilePanelP
                 <button
                   key={item.label}
                   type="button"
+                  onClick={() => onSettingClick?.(item.label)}
                   className="flex h-[56px] w-full items-center gap-3 text-left transition active:scale-[0.99]"
                 >
                   <Icon size={23} strokeWidth={1.9} className="shrink-0 text-[#2F2F2F]" />
@@ -127,7 +122,11 @@ export function ProfilePanel({ user, onLogout, onOpenGoalEditor }: ProfilePanelP
         ))}
       </Card>
 
-      <section data-animate-item className="relative overflow-hidden rounded-[22px] border border-[rgba(201,24,43,0.06)] bg-[linear-gradient(135deg,#FCE8EA_0%,#FFFFFF_100%)] px-5 py-4 shadow-[0_8px_24px_rgba(160,80,80,0.08)]">
+      <section
+        data-animate-item
+        onClick={() => onSettingClick?.("StefBank 存款小贴士")}
+        className="relative cursor-pointer overflow-hidden rounded-[22px] border border-[rgba(201,24,43,0.06)] bg-[linear-gradient(135deg,#FCE8EA_0%,#FFFFFF_100%)] px-5 py-4 shadow-[0_8px_24px_rgba(160,80,80,0.08)] transition active:scale-[0.99]"
+      >
         <div className="max-w-[68%]">
           <h2 className="text-[18px] font-bold text-[#C9182B]">StefBank 存款小贴士</h2>
           <p className="mt-3 text-[15px] leading-6 text-[#6D5553]">

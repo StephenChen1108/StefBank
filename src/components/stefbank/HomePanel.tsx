@@ -1,10 +1,11 @@
-﻿import {
+import { useMemo, useState } from "react";
+import {
   ArrowDownToLine,
   ArrowRight,
   ArrowUpFromLine,
+  ChevronDown,
   ClipboardCheck,
   PencilLine,
-  Target,
   WalletCards,
 } from "lucide-react";
 import type { AccountSummary, RequestTab, TabId, Transaction, TransactionType, UserRole } from "@/data/bank-types";
@@ -34,6 +35,49 @@ export function HomePanel({
   const recentTransactions = transactions.slice(0, 3);
   const isManager = role === "manager";
 
+  const [homePeriod, setHomePeriod] = useState<"month" | "year" | "all">("month");
+
+  const filteredRecentTransactions = useMemo(() => {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = String(now.getMonth() + 1).padStart(2, "0");
+    const currentMonthPrefix = `${currentYear}.${currentMonth}`;
+
+    const filtered = transactions.filter((t) => {
+      if (homePeriod === "all") return true;
+      if (homePeriod === "year") return t.transactionDate.startsWith(String(currentYear));
+      return t.transactionDate.startsWith(currentMonthPrefix);
+    });
+
+    return filtered.slice(0, 3);
+  }, [transactions, homePeriod]);
+
+  const stats = useMemo(() => {
+    const totalDeposit = transactions
+      .filter((t) => t.type === "deposit")
+      .reduce((sum, t) => sum + t.amount, 0);
+    const totalWithdraw = transactions
+      .filter((t) => t.type === "withdraw")
+      .reduce((sum, t) => sum + t.amount, 0);
+
+    const firstDate =
+      transactions.length > 0
+        ? transactions[transactions.length - 1].transactionDate
+        : null;
+
+    let daysProtected = 0;
+    if (firstDate) {
+      const first = new Date(firstDate.replace(/\./g, "-"));
+      const now = new Date();
+      daysProtected = Math.max(
+        1,
+        Math.floor((now.getTime() - first.getTime()) / (1000 * 60 * 60 * 24)) + 1,
+      );
+    }
+
+    return { totalDeposit, totalWithdraw, daysProtected };
+  }, [transactions]);
+
   return (
     <div className="space-y-4">
       <FeatureCard className="px-5 py-5" data-animate-item>
@@ -41,11 +85,33 @@ export function HomePanel({
         <p className="mt-3 text-[44px] font-bold leading-none text-[#C9182B]">
           {formatCurrency(account.currentBalance)}
         </p>
-        <div className="mt-3 flex items-center gap-2.5 text-[14px] text-[#6D5553]">
-          <span className="h-3 w-3 rounded-full bg-[#94C894]" />
-          今日正常营业中
-        </div>
+        <p className="mt-3 text-[15px] text-[#6D5553]">
+          已经帮椰子保护小金库{" "}
+          <span className="text-[22px] font-bold text-[#C9182B]">{stats.daysProtected}</span>{" "}
+          天
+        </p>
       </FeatureCard>
+
+      <div className="grid grid-cols-2 gap-3" data-animate-item>
+        <Card className="flex items-center justify-between bg-[#FFF4F5] px-4 py-3.5">
+          <div>
+            <p className="text-[15px] text-[#4B3D3B]">本月存入</p>
+            <p className="mt-2 text-[22px] font-semibold text-[#C9182B]">
+              {formatCurrency(account.monthDeposit)}
+            </p>
+          </div>
+          <IconBadge icon={WalletCards} tone="red" />
+        </Card>
+        <Card className="flex items-center justify-between bg-[#F8FCF8] px-4 py-3.5">
+          <div>
+            <p className="text-[15px] text-[#4B3D3B]">本月取出</p>
+            <p className="mt-2 text-[22px] font-semibold text-[#2E7D32]">
+              {formatCurrency(account.monthWithdraw)}
+            </p>
+          </div>
+          <IconBadge icon={WalletCards} tone="green" />
+        </Card>
+      </div>
 
       {isManager ? (
         <div className="grid grid-cols-2 gap-3" data-animate-item>
@@ -76,27 +142,6 @@ export function HomePanel({
           </ActionButton>
         </div>
       )}
-
-      <div className="grid grid-cols-2 gap-3" data-animate-item>
-        <Card className="flex items-center justify-between bg-[#FFF4F5] px-4 py-3.5">
-          <div>
-            <p className="text-[15px] text-[#4B3D3B]">本月存入</p>
-            <p className="mt-2 text-[22px] font-semibold text-[#C9182B]">
-              {formatCurrency(account.monthDeposit)}
-            </p>
-          </div>
-          <IconBadge icon={WalletCards} tone="red" />
-        </Card>
-        <Card className="flex items-center justify-between bg-[#F8FCF8] px-4 py-3.5">
-          <div>
-            <p className="text-[15px] text-[#4B3D3B]">本月取出</p>
-            <p className="mt-2 text-[22px] font-semibold text-[#2E7D32]">
-              {formatCurrency(account.monthWithdraw)}
-            </p>
-          </div>
-          <IconBadge icon={WalletCards} tone="green" />
-        </Card>
-      </div>
 
       {!isManager ? (
         <Card className="px-5 py-3.5" data-animate-item>
@@ -141,6 +186,21 @@ export function HomePanel({
         </Card>
       ) : null}
 
+      <div className="grid grid-cols-2 gap-3" data-animate-item>
+        <Card className="px-4 py-3.5">
+          <p className="text-[13px] text-[#8A8A8A]">累计存入</p>
+          <p className="mt-1 text-[18px] font-semibold text-[#C9182B]">
+            {formatCurrency(stats.totalDeposit)}
+          </p>
+        </Card>
+        <Card className="px-4 py-3.5">
+          <p className="text-[13px] text-[#8A8A8A]">累计取出</p>
+          <p className="mt-1 text-[18px] font-semibold text-[#2E7D32]">
+            {formatCurrency(stats.totalWithdraw)}
+          </p>
+        </Card>
+      </div>
+
       <Card className="px-5 py-3.5" data-animate-item>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-[18px] font-semibold text-[#2F2F2F]">最近流水</h2>
@@ -149,12 +209,32 @@ export function HomePanel({
             onClick={() => onNavigate("transactions")}
             className="flex items-center gap-1 text-[15px] text-[#8A8A8A] transition active:scale-95"
           >
-            全部
+            查看全部
             <ArrowRight size={18} />
           </button>
         </div>
+        <div className="mb-3 flex gap-2">
+          {([
+            { value: "month", label: "本月" },
+            { value: "year", label: "今年" },
+            { value: "all", label: "全部" },
+          ] as const).map((item) => (
+            <button
+              key={item.value}
+              type="button"
+              onClick={() => setHomePeriod(item.value)}
+              className={`h-[32px] rounded-full px-4 text-[13px] font-medium transition active:scale-95 ${
+                homePeriod === item.value
+                  ? "bg-[#C9182B] text-white"
+                  : "bg-[#F3ECEA] text-[#6D5553]"
+              }`}
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
         <div className="divide-y divide-[#EFE7E5]">
-          {recentTransactions.map((transaction) => {
+          {filteredRecentTransactions.map((transaction) => {
             const isDeposit = transaction.type === "deposit";
 
             return (
