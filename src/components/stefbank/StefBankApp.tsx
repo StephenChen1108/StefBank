@@ -102,10 +102,11 @@ export function StefBankApp({ initialTab = "home" }: StefBankAppProps = {}) {
     try {
       const snapshot = await getBankDataSource().signIn(credentials.username, credentials.password);
       applySnapshot(snapshot);
-      setActiveTab(initialTab);
+      setActiveTab("home");
       setMoneyAction(null);
       setTransactionAction(null);
       setIsGoalEditorOpen(false);
+      setSettingsScreen(null);
       toast.success("登录成功");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "登录失败");
