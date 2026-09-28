@@ -1,0 +1,55 @@
+{
+  "name": "stefbank-app",
+  "version": "0.1.0",
+  "private": true,
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build && node scripts/check-client-bundle.cjs && node scripts/generate-csp-headers.cjs",
+    "deploy:pages": "npm run build && wrangler pages deploy ./out --project-name stefbank --branch master",
+    "start": "next start",
+    "lint": "eslint",
+    "postinstall": "patch-package",
+    "supabase:init": "node scripts/init-supabase.cjs",
+    "supabase:rotate-passwords": "node scripts/rotate-auth-passwords.cjs",
+    "security:bundle": "node scripts/check-client-bundle.cjs",
+    "test": "vitest",
+    "test:run": "vitest run"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.110.8",
+    "gsap": "3.15.0",
+    "lucide-react": "1.27.0",
+    "next": "16.2.12",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260726.1",
+    "@next/env": "16.2.12",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6.0.4",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "16.2.12",
+    "jsdom": "^29.1.1",
+    "patch-package": "8.0.1",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5",
+    "vite-tsconfig-paths": "^6.1.1",
+    "vitest": "^4.1.10",
+    "wrangler": "4.114.0"
+  },
+  "overrides": {
+    "brace-expansion": "5.0.8",
+    "postcss": "8.5.23",
+    "sharp": "0.35.0"
+  }
+}
